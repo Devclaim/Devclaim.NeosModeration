@@ -1,0 +1,29 @@
+{
+    "name": "devclaim/neos-moderation",
+    "description": "Frontend-independent moderation cases and Neos backend workflow",
+    "type": "neos-package",
+    "license": "GPL-3.0-or-later",
+    "require": {
+        "php": ">=8.4",
+        "neos/flow": "^9.2",
+        "neos/neos": "^9.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Devclaim\\NeosModeration\\": "Classes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Devclaim\\NeosModeration\\Tests\\": "Tests/"
+        }
+    },
+    "extra": {
+        "neos": {
+            "package-key": "Devclaim.NeosModeration"
+        }
+    }
+}

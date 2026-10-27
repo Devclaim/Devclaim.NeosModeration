@@ -1,0 +1,18 @@
+prototype(Devclaim.NeosModeration:Component.CaseRow) < prototype(Neos.Fusion:Component) {
+    case = null
+
+    showUri = Neos.Fusion:UriBuilder {
+        action = 'show'
+        arguments.caseId = ${props.case.identifier}
+    }
+
+    renderer = afx`
+        <tr>
+            <td><a href={props.showUri}>{props.case.identifier}</a></td>
+            <td>{props.case.typeLabel}</td>
+            <td>{props.case.status}</td>
+            <td>{props.case.locale}</td>
+            <td>{props.case.submittedAt}</td>
+        </tr>
+    `
+}

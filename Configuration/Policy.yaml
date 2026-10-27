@@ -1,0 +1,34 @@
+privilegeTargets:
+  'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
+    'Devclaim.NeosModeration:Backend.Actions':
+      label: 'Access moderation backend controller actions'
+      matcher: 'method(Devclaim\NeosModeration\Controller\ModerationController->(index|show|approve|reject)Action())'
+
+  'Neos\Neos\Security\Authorization\Privilege\ModulePrivilege':
+    'Devclaim.NeosModeration:Backend.Module':
+      label: 'Open the Moderation backend module'
+      matcher: 'moderation'
+
+roles:
+  'Neos.Neos:Administrator':
+    privileges:
+      -
+        privilegeTarget: 'Devclaim.NeosModeration:Backend.Module'
+        permission: GRANT
+      -
+        privilegeTarget: 'Devclaim.NeosModeration:Backend.Actions'
+        permission: GRANT
+
+  'Devclaim.NeosModeration:Moderator':
+    label: 'Moderation backend user'
+    description: 'Allows backend login and opening moderation; a project role must additionally grant type privileges.'
+    privileges:
+      -
+        privilegeTarget: 'Neos.Neos:Backend.GeneralAccess'
+        permission: GRANT
+      -
+        privilegeTarget: 'Devclaim.NeosModeration:Backend.Module'
+        permission: GRANT
+      -
+        privilegeTarget: 'Devclaim.NeosModeration:Backend.Actions'
+        permission: GRANT

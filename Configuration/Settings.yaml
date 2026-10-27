@@ -1,0 +1,18 @@
+Devclaim:
+  NeosModeration:
+    types: {}
+
+Neos:
+  Neos:
+    moduleConfiguration:
+      # Neos 9.2's login redirect falls through to current([]) for a leaf-only root module.
+      # Keep the existing preferences and add moderation before the user fallback.
+      preferredStartModules: ['content', 'moderation', 'user/usersettings']
+    modules:
+      moderation:
+        label: 'Moderation'
+        controller: 'Devclaim\NeosModeration\Controller\ModerationController'
+        description: 'Review submitted moderation cases'
+        icon: 'fas fa-shield-alt'
+        privilegeTarget: 'Devclaim.NeosModeration:Backend.Module'
+        mainStylesheet: 'Lite'

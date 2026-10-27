@@ -1,0 +1,8 @@
+prototype(Devclaim.NeosModeration:Component.PresentationField) < prototype(Neos.Fusion:Component) {
+    field = null
+
+    renderer = afx`
+        <dt>{props.field.label}</dt>
+        <dd><pre>{props.field.value}</pre></dd>
+    `
+}

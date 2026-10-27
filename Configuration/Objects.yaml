@@ -1,0 +1,11 @@
+Devclaim\NeosModeration\Domain\Repository\ModerationCaseStoreInterface:
+  className: Devclaim\NeosModeration\Infrastructure\Persistence\Doctrine\DoctrineModerationCaseStore
+
+Devclaim\NeosModeration\Domain\Service\ModerationAuthorizationInterface:
+  className: Devclaim\NeosModeration\Infrastructure\Security\FlowModerationAuthorization
+
+Devclaim\NeosModeration\Domain\Service\ActorProviderInterface:
+  className: Devclaim\NeosModeration\Infrastructure\Security\FlowActorProvider
+
+Devclaim\NeosModeration\Domain\Service\ClockInterface:
+  className: Devclaim\NeosModeration\Infrastructure\Time\SystemClock

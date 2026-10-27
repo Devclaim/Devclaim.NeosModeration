@@ -1,0 +1,80 @@
+prototype(Devclaim.NeosModeration:View.Show) < prototype(Neos.Fusion:Component) {
+    case = null
+    presentation = null
+    privateMetadata = null
+    auditEntries = null
+    csrfToken = ''
+
+    backUri = Neos.Fusion:UriBuilder {
+        action = 'index'
+    }
+    approveUri = Neos.Fusion:UriBuilder {
+        action = 'approve'
+    }
+    rejectUri = Neos.Fusion:UriBuilder {
+        action = 'reject'
+    }
+
+    renderer = afx`
+        <div class="neos-content neos-container-fluid">
+            <p><a class="neos-button" href={props.backUri}>Back to cases</a></p>
+            <h1>{props.presentation.title}</h1>
+            <dl>
+                <dt>Identifier</dt><dd>{props.case.identifier}</dd>
+                <dt>Type</dt><dd>{props.case.typeLabel} ({props.case.typeKey})</dd>
+                <dt>Status</dt><dd>{props.case.status}</dd>
+                <dt>Locale</dt><dd>{props.case.locale}</dd>
+                <dt>Submitted</dt><dd>{props.case.submittedAt}</dd>
+                <Neos.Fusion:Loop items={props.presentation.fields} itemName="field" iterationName="fieldIterator">
+                    <Devclaim.NeosModeration:Component.PresentationField field={field} />
+                </Neos.Fusion:Loop>
+            </dl>
+
+            <Neos.Fusion:Case>
+                <Neos.Fusion:Matcher condition={props.privateMetadata != null}>
+                    <h2>Private submitter metadata</h2>
+                    <pre>{props.privateMetadata}</pre>
+                </Neos.Fusion:Matcher>
+            </Neos.Fusion:Case>
+
+            <Neos.Fusion:Case>
+                <Neos.Fusion:Matcher condition={props.case.status == 'pending'}>
+                    <h2>Decision</h2>
+                    <form method="post" action={props.approveUri} class="neos-form">
+                        <input type="hidden" name="__csrfToken" value={props.csrfToken} />
+                        <input type="hidden" name="caseId" value={props.case.identifier} />
+                        <label for="approve-reason">Optional decision reason</label>
+                        <textarea id="approve-reason" name="reason" maxlength="4000"></textarea>
+                        <button class="neos-button neos-button-success" type="submit">Approve</button>
+                    </form>
+                    <form method="post" action={props.rejectUri} class="neos-form">
+                        <input type="hidden" name="__csrfToken" value={props.csrfToken} />
+                        <input type="hidden" name="caseId" value={props.case.identifier} />
+                        <label for="reject-reason">Optional rejection reason</label>
+                        <textarea id="reject-reason" name="reason" maxlength="4000"></textarea>
+                        <button class="neos-button neos-button-danger" type="submit">Reject</button>
+                    </form>
+                </Neos.Fusion:Matcher>
+                <Neos.Fusion:Matcher condition={true}>
+                    <h2>Decision</h2>
+                    <dl>
+                        <dt>Decided</dt><dd>{props.case.decidedAt}</dd>
+                        <dt>Moderator</dt><dd>{props.case.moderatorIdentifier}</dd>
+                        <dt>Reason</dt><dd>{props.case.decisionReason}</dd>
+                        <dt>External reference</dt><dd>{props.case.externalReference}</dd>
+                    </dl>
+                </Neos.Fusion:Matcher>
+            </Neos.Fusion:Case>
+
+            <h2>Audit history</h2>
+            <table class="neos-table">
+                <thead><tr><th>Recorded</th><th>Event</th><th>Actor</th><th>Context</th></tr></thead>
+                <tbody>
+                    <Neos.Fusion:Loop items={props.auditEntries} itemName="entry" iterationName="auditIterator">
+                        <Devclaim.NeosModeration:Component.AuditRow entry={entry} />
+                    </Neos.Fusion:Loop>
+                </tbody>
+            </table>
+        </div>
+    `
+}

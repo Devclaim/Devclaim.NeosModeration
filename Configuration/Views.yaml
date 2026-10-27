@@ -1,0 +1,7 @@
+-
+  requestFilter: 'isPackage("Devclaim.NeosModeration") && isController("Moderation") && isFormat("html")'
+  viewObjectName: 'Neos\Fusion\View\FusionView'
+  options:
+    fusionPathPatterns:
+      - 'resource://Neos.Fusion/Private/Fusion'
+      - 'resource://Devclaim.NeosModeration/Private/Fusion'
