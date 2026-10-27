@@ -3,10 +3,10 @@ prototype(Devclaim.NeosModeration:Component.AuditRow) < prototype(Neos.Fusion:Co
 
     renderer = afx`
         <tr>
-            <td>{props.entry.recordedAt}</td>
-            <td>{props.entry.event}</td>
-            <td>{props.entry.actor}</td>
-            <td><pre>{props.entry.context}</pre></td>
+            <td>{String.htmlSpecialChars(props.entry.recordedAt)}</td>
+            <td>{String.htmlSpecialChars(props.entry.event)}</td>
+            <td>{String.htmlSpecialChars(props.entry.actor)}</td>
+            <td><pre>{String.htmlSpecialChars(props.entry.context)}</pre></td>
         </tr>
     `
 }

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Devclaim\NeosModeration\Controller;
 
 use Devclaim\NeosModeration\Application\ModerationCaseService;
+use Devclaim\NeosModeration\Domain\Exception\CaseAlreadyDecided;
 use Devclaim\NeosModeration\Domain\Model\ModerationAuditEntry;
 use Devclaim\NeosModeration\Domain\Model\ModerationCase;
 use Devclaim\NeosModeration\Domain\Model\ModerationStatus;
 use Devclaim\NeosModeration\Domain\Service\ModerationTypeHandlerInterface;
 use Devclaim\NeosModeration\Domain\ValueObject\ModerationCaseId;
 use GuzzleHttp\Psr7\Response;
+use Neos\Error\Messages\Message;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Security\Context;
 use Neos\Fusion\View\FusionView;
@@ -76,8 +78,12 @@ final class ModerationController extends AbstractModuleController
         if ($this->request->getHttpRequest()->getMethod() !== 'POST') {
             return new Response(405, ['Allow' => 'POST']);
         }
-        $this->moderationCaseService->approve(ModerationCaseId::fromString($caseId), $reason);
-        $this->addFlashMessage('The moderation case was approved.');
+        try {
+            $this->moderationCaseService->approve(ModerationCaseId::fromString($caseId), $reason);
+            $this->addFlashMessage('The moderation case was approved.');
+        } catch (CaseAlreadyDecided $exception) {
+            $this->addFlashMessage($exception->getMessage(), severity: Message::SEVERITY_ERROR);
+        }
         $this->redirect('show', arguments: ['caseId' => $caseId]);
     }
 
@@ -86,8 +92,12 @@ final class ModerationController extends AbstractModuleController
         if ($this->request->getHttpRequest()->getMethod() !== 'POST') {
             return new Response(405, ['Allow' => 'POST']);
         }
-        $this->moderationCaseService->reject(ModerationCaseId::fromString($caseId), $reason);
-        $this->addFlashMessage('The moderation case was rejected.');
+        try {
+            $this->moderationCaseService->reject(ModerationCaseId::fromString($caseId), $reason);
+            $this->addFlashMessage('The moderation case was rejected.');
+        } catch (CaseAlreadyDecided $exception) {
+            $this->addFlashMessage($exception->getMessage(), severity: Message::SEVERITY_ERROR);
+        }
         $this->redirect('show', arguments: ['caseId' => $caseId]);
     }
 

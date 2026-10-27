@@ -92,6 +92,7 @@ final class ModerationCaseService
                 $result->externalReference,
                 $result->auditContext,
             );
+            $this->caseStore->update($case);
             return $case;
         });
     }
@@ -119,6 +120,7 @@ final class ModerationCaseService
                 $reason,
                 $result->auditContext,
             );
+            $this->caseStore->update($case);
             return $case;
         });
     }

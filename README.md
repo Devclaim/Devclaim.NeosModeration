@@ -12,10 +12,10 @@ configuration:
 ```yaml
 # Acme.Site/Configuration/Settings.yaml
 Devclaim:
-  NeosModeration:
-    types:
-      'acme.example':
-        handler: 'Acme\Site\Moderation\ExampleTypeHandler'
+    NeosModeration:
+        types:
+            'acme.example':
+                handler: 'Acme\Site\Moderation\ExampleTypeHandler'
 ```
 
 The handler implements `ModerationTypeHandlerInterface`. It validates all submission values and limits before it
@@ -73,20 +73,20 @@ Define the handler's method privilege targets and a project-specific child role:
 ```yaml
 # Acme.Site/Configuration/Policy.yaml
 privilegeTargets:
-  'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
-    'Acme.Site:Moderation.Example':
-      matcher: 'method(Acme\Site\Moderation\ExamplePermissionSubject->access())'
-    'Acme.Site:Moderation.Example.PrivateMetadata':
-      matcher: 'method(Acme\Site\Moderation\ExamplePrivatePermissionSubject->access())'
+    'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
+        'Acme.Site:Moderation.Example':
+            matcher: 'method(Acme\Site\Moderation\ExamplePermissionSubject->access())'
+        'Acme.Site:Moderation.Example.PrivateMetadata':
+            matcher: 'method(Acme\Site\Moderation\ExamplePrivatePermissionSubject->access())'
 
 roles:
-  'Acme.Site:ExampleModerator':
-    parentRoles: ['Devclaim.NeosModeration:Moderator']
-    privileges:
-      - privilegeTarget: 'Acme.Site:Moderation.Example'
-        permission: GRANT
-      - privilegeTarget: 'Acme.Site:Moderation.Example.PrivateMetadata'
-        permission: GRANT
+    'Acme.Site:ExampleModerator':
+        parentRoles: ['Devclaim.NeosModeration:Moderator']
+        privileges:
+            - privilegeTarget: 'Acme.Site:Moderation.Example'
+                permission: GRANT
+            - privilegeTarget: 'Acme.Site:Moderation.Example.PrivateMetadata'
+                permission: GRANT
 ```
 
 Privilege targets are identifiers evaluated explicitly by the application service; their matcher is never used to

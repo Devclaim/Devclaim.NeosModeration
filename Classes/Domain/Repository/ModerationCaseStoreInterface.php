@@ -18,6 +18,9 @@ interface ModerationCaseStoreInterface
 
     public function add(ModerationCase $case): void;
 
+    /** Schedules a changed case for writing; persistence may track changes explicitly only. */
+    public function update(ModerationCase $case): void;
+
     public function find(ModerationCaseId $id): ?ModerationCase;
 
     public function findForUpdate(ModerationCaseId $id): ?ModerationCase;

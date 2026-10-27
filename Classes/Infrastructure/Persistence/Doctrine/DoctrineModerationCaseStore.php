@@ -29,6 +29,12 @@ final class DoctrineModerationCaseStore implements ModerationCaseStoreInterface
         $this->entityManager->persist($case);
     }
 
+    public function update(ModerationCase $case): void
+    {
+        // Flow maps entities with DEFERRED_EXPLICIT change tracking, so a changed case must be persisted again.
+        $this->entityManager->persist($case);
+    }
+
     public function find(ModerationCaseId $id): ?ModerationCase
     {
         return $this->entityManager->find(ModerationCase::class, $id->value);

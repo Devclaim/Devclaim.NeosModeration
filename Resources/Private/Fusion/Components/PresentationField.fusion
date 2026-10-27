@@ -2,7 +2,7 @@ prototype(Devclaim.NeosModeration:Component.PresentationField) < prototype(Neos.
     field = null
 
     renderer = afx`
-        <dt>{props.field.label}</dt>
-        <dd><pre>{props.field.value}</pre></dd>
+        <dt>{String.htmlSpecialChars(props.field.label)}</dt>
+        <dd><pre>{String.htmlSpecialChars(props.field.value)}</pre></dd>
     `
 }

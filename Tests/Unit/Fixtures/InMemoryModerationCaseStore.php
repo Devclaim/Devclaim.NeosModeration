@@ -15,6 +15,7 @@ final class InMemoryModerationCaseStore implements ModerationCaseStoreInterface
     public array $cases = [];
     public int $lockedReads = 0;
     public int $transactions = 0;
+    public int $updates = 0;
 
     public function transactional(callable $operation): mixed
     {
@@ -24,6 +25,12 @@ final class InMemoryModerationCaseStore implements ModerationCaseStoreInterface
 
     public function add(ModerationCase $case): void
     {
+        $this->cases[$case->getId()->value] = $case;
+    }
+
+    public function update(ModerationCase $case): void
+    {
+        $this->updates++;
         $this->cases[$case->getId()->value] = $case;
     }
 

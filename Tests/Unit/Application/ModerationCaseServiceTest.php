@@ -65,6 +65,14 @@ final class ModerationCaseServiceTest extends TestCase
         self::assertSame('Accepted', $this->case->getDecisionReason());
     }
 
+    public function testDecisionsAreHandedBackToTheStoreForExplicitChangeTracking(): void
+    {
+        $this->service->approve($this->case->getId());
+        $this->service->approve($this->case->getId());
+
+        self::assertSame(1, $this->store->updates);
+    }
+
     public function testOppositeDecisionAfterApprovalIsRejected(): void
     {
         $this->service->approve($this->case->getId());
