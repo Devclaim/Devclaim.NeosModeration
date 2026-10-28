@@ -34,7 +34,7 @@ final class SecurityConfigurationTest extends TestCase
             'Neos\\Flow\\Security\\Authorization\\Privilege\\Method\\MethodPrivilege'
         ];
         $matcher = $methodTargets['Devclaim.NeosModeration:Backend.Actions']['matcher'];
-        self::assertStringContainsString('(cases|case|correct|approve|reject)Action()', $matcher);
+        self::assertStringContainsString('(session|cases|case|correct|approve|reject)Action()', $matcher);
 
         // writing actions only answer POST, which Flow protects with the CSRF token of the session
         $routes = Yaml::parseFile($this->packagePath('Configuration/Routes.yaml'));

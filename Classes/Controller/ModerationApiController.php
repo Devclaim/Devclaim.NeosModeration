@@ -19,6 +19,7 @@ use Devclaim\NeosModeration\Domain\Service\PreviewableTypeHandlerInterface;
 use Devclaim\NeosModeration\Domain\ValueObject\ModerationCaseId;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
+use Neos\Flow\Security\Context as SecurityContext;
 
 /**
  * The JSON API of the moderation app (ModerationAppController), with the Neos backend session: the cases of the
@@ -38,7 +39,20 @@ final class ModerationApiController extends ActionController
 
     public function __construct(
         private readonly ModerationCaseService $moderationCaseService,
+        private readonly SecurityContext $securityContext,
     ) {
+    }
+
+    /**
+     * GET session: the CSRF token of the session, for pages outside of the app that decide cases (e.g. a bar in the
+     * Neos UI); and whether the user may moderate anything at all
+     */
+    public function sessionAction(): string
+    {
+        return $this->respond(fn(): array => [
+            'csrfToken' => $this->securityContext->getCsrfProtectionToken(),
+            'moderates' => $this->moderationCaseService->getAccessibleTypes() !== [],
+        ]);
     }
 
     /** GET cases?status=pending|approved|rejected|all&type=…&q=… */

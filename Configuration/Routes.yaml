@@ -11,6 +11,15 @@
   # the state of the app is in the query (?case=…&screen=…): kept when the login sends the user back
   appendExceedingArguments: true
 -
+  name: 'Moderation API: session'
+  uriPattern: 'neos/moderation/api/session'
+  httpMethods: ['GET']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApi'
+    '@action': 'session'
+    '@format': 'json'
+-
   name: 'Moderation API: cases'
   uriPattern: 'neos/moderation/api/cases'
   httpMethods: ['GET']

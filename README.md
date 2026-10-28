@@ -11,10 +11,13 @@ contains no public submission endpoint, spam protection, event model, or fronten
 correctable fields, the private contact data, the history and the decision. Links keep the state
 (`/neos/moderation?case=…&status=…`). It uses the Neos backend session; without one, the Neos login brings the user
 back. The backend module "moderation" has the same address, so users without the content module (moderators) land in
-the app after logging in (`Neos.Neos.moduleConfiguration.preferredStartModules`).
+the app after logging in (`Neos.Neos.moduleConfiguration.preferredStartModules`); moderators who may open the content
+module but not publish to live land there too (`ModeratorStartAspect`).
 
 The app talks to a JSON API with the session and its CSRF token (`ModerationApiController`, `/neos/moderation/api/…`):
-the cases with counts per status, a case, its corrections, approval and rejection.
+the cases with counts per status, a case, its corrections, approval and rejection. Pages of the same origin outside of
+the app (e.g. a bar in the Neos UI next to the content a case created) get the token from `GET …/api/session`
+(`{"csrfToken": …, "moderates": true|false}`) and use the same API.
 
 ```bash
 cd DistributionPackages/Devclaim.NeosModeration && yarn install && yarn build   # after a change of the app
