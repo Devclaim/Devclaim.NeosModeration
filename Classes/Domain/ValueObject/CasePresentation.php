@@ -9,8 +9,8 @@ final readonly class CasePresentation
     /**
      * @param list<PresentationField> $fields
      * @param string $summary one line for lists, e.g. the date and the kind of a case
-     * @param list<array{label: string, uri: string, note?: string}> $links e.g. to where the case is edited, to what
-     *     an approval created
+     * @param list<array{label: string, uri: string, note?: string, disabled?: bool}> $links
+     *     e.g. to where the case is edited, to what an approval created; disabled: a button that cannot be used yet
      * @param array{approve?: string, reject?: string} $decisionHints what a decision does, for the confirmation
      * @param \DateTimeImmutable|null $editedAt when what the case created was last edited after the submission (e.g. in
      *     Neos), null if it is as submitted: the app then shows the submission next to the current state

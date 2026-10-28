@@ -84,7 +84,8 @@ export type CaseDetail = CaseSummary & {
 	effective: Record<string, unknown>;
 	fields: { label: string; value: string }[];
 	/** e.g. to where the case is edited, to what an approval created */
-	links: { label: string; uri: string; note?: string }[];
+	/** disabled: shown as a button that cannot be used yet (e.g. editing what is not published) */
+	links: { label: string; uri: string; note?: string; disabled?: boolean }[];
 	/** what a decision does, for its confirmation (else a general text) */
 	decisionHints: { approve?: string; reject?: string };
 	/** when what the case created was last edited after the submission (e.g. in Neos); null: as submitted */

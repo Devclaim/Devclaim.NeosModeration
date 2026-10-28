@@ -210,7 +210,11 @@ export function CaseDetail({
 						<section className="panel-section item-links">
 							{detail.links.map((link, index) => (
 								<div key={link.label} className="decision-link">
-									{link.uri ? (
+									{link.disabled ? (
+										<button type="button" className={index === 0 ? 'button button-primary' : 'button'} disabled>
+											{link.label}
+										</button>
+									) : link.uri ? (
 										<a className={index === 0 ? 'button button-primary' : 'button'} href={link.uri}>
 											{link.label}
 										</a>

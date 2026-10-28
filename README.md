@@ -37,7 +37,8 @@ fields edited in place (`{"type": "moderation:correct", field, value}`).
 
 A type whose cases are edited elsewhere (e.g. as content in Neos) needs neither: its presentation (`present()`) gives
 the links there (`CasePresentation::$links`, shown above the details while the case is pending, and with the decision
-afterwards) and its preview shows the current state. `CasePresentation::$decisionHints` (`approve`, `reject`) says in
+afterwards; `disabled: true` shows one as a button that cannot be used yet, its `note` says when) and its preview shows
+the current state. `CasePresentation::$decisionHints` (`approve`, `reject`) says in
 the confirmation what a decision does; next to the preview the app lists the presented fields as "Eingesendet".
 `CasePresentation::$editedAt` says when what the case created was last edited after the submission: the app then
 switches between the submission (`getPreviewData($case, true)`) and the current state, shows "Bearbeitet" in the
