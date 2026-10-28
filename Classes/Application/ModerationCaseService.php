@@ -6,6 +6,7 @@ namespace Devclaim\NeosModeration\Application;
 
 use Devclaim\NeosModeration\Domain\Exception\AccessDenied;
 use Devclaim\NeosModeration\Domain\Exception\CaseAlreadyDecided;
+use Devclaim\NeosModeration\Domain\Exception\InvalidModerationData;
 use Devclaim\NeosModeration\Domain\Exception\ModerationCaseNotFound;
 use Devclaim\NeosModeration\Domain\Model\ModerationCase;
 use Devclaim\NeosModeration\Domain\Model\ModerationStatus;
@@ -13,6 +14,7 @@ use Devclaim\NeosModeration\Domain\Repository\ModerationCaseQuery;
 use Devclaim\NeosModeration\Domain\Repository\ModerationCaseStoreInterface;
 use Devclaim\NeosModeration\Domain\Service\ActorProviderInterface;
 use Devclaim\NeosModeration\Domain\Service\ClockInterface;
+use Devclaim\NeosModeration\Domain\Service\CorrectableTypeHandlerInterface;
 use Devclaim\NeosModeration\Domain\Service\ModerationAuthorizationInterface;
 use Devclaim\NeosModeration\Domain\Service\ModerationTypeHandlerInterface;
 use Devclaim\NeosModeration\Domain\Service\ModerationTypeRegistry;
@@ -63,6 +65,45 @@ final class ModerationCaseService
         $case = $this->caseStore->find($id) ?? throw ModerationCaseNotFound::withId($id);
         $this->authorization->assertCanAccessType($this->typeRegistry->get($case->getTypeKey()));
         return $case;
+    }
+
+    /** @return array<string, int> status value => number of cases of the accessible types */
+    public function counts(): array
+    {
+        return $this->caseStore->countByStatus(array_keys($this->getAccessibleTypes()));
+    }
+
+    /**
+     * Replaces the moderator's corrections of a pending case; the submitted payload stays unchanged
+     *
+     * @param array<string, mixed> $corrections
+     * @throws InvalidModerationData
+     */
+    public function correct(ModerationCaseId $id, array $corrections): ModerationCase
+    {
+        return $this->caseStore->transactional(function () use ($id, $corrections): ModerationCase {
+            $case = $this->caseStore->findForUpdate($id) ?? throw ModerationCaseNotFound::withId($id);
+            $handler = $this->typeRegistry->get($case->getTypeKey());
+            $this->authorization->assertCanAccessType($handler);
+            if ($case->getStatus() !== ModerationStatus::Pending) {
+                throw CaseAlreadyDecided::withStatus($case->getStatus());
+            }
+            if (!$handler instanceof CorrectableTypeHandlerInterface) {
+                throw new InvalidModerationData(['__general' => 'notCorrectable']);
+            }
+            $allowed = array_map(static fn($field): string => $field->name, $handler->getCorrectableFields($case));
+            $unknown = array_diff(array_keys($corrections), $allowed);
+            if ($unknown !== []) {
+                throw new InvalidModerationData(array_fill_keys(array_values($unknown), 'notCorrectable'));
+            }
+            $case->correct(
+                $handler->validateCorrections($case, $corrections),
+                $this->actorProvider->requireActorIdentifier(),
+                $this->clock->now(),
+            );
+            $this->caseStore->update($case);
+            return $case;
+        });
     }
 
     public function canViewPrivateMetadata(ModerationCase $case): bool

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Devclaim\NeosModeration\Infrastructure\Persistence\Doctrine;
 
 use Devclaim\NeosModeration\Domain\Model\ModerationCase;
+use Devclaim\NeosModeration\Domain\Model\ModerationStatus;
 use Devclaim\NeosModeration\Domain\Repository\ModerationCaseQuery;
 use Devclaim\NeosModeration\Domain\Repository\ModerationCaseStoreInterface;
 use Devclaim\NeosModeration\Domain\ValueObject\ModerationCaseId;
@@ -82,5 +83,27 @@ final class DoctrineModerationCaseStore implements ModerationCaseStoreInterface
         /** @var list<ModerationCase> $cases */
         $cases = $queryBuilder->getQuery()->getResult();
         return $cases;
+    }
+
+    public function countByStatus(array $allowedTypeKeys): array
+    {
+        if ($allowedTypeKeys === []) {
+            return [];
+        }
+        /** @var list<array{status: ModerationStatus|string, number: int|string}> $rows */
+        $rows = $this->entityManager->createQueryBuilder()
+            ->select('moderationCase.status AS status', 'COUNT(moderationCase.identifier) AS number')
+            ->from(ModerationCase::class, 'moderationCase')
+            ->where('moderationCase.typeKey IN (:allowedTypeKeys)')
+            ->setParameter('allowedTypeKeys', $allowedTypeKeys)
+            ->groupBy('moderationCase.status')
+            ->getQuery()
+            ->getArrayResult();
+        $counts = [];
+        foreach ($rows as $row) {
+            $status = $row['status'] instanceof ModerationStatus ? $row['status']->value : (string)$row['status'];
+            $counts[$status] = (int)$row['number'];
+        }
+        return $counts;
     }
 }

@@ -1,0 +1,55 @@
+# Before the routes of Neos: /neos/moderation is the moderation app, not the module frame (ModerationAppController)
+-
+  name: 'Moderation app'
+  uriPattern: 'neos/moderation'
+  httpMethods: ['GET']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApp'
+    '@action': 'index'
+    '@format': 'html'
+-
+  name: 'Moderation API: cases'
+  uriPattern: 'neos/moderation/api/cases'
+  httpMethods: ['GET']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApi'
+    '@action': 'cases'
+    '@format': 'json'
+-
+  name: 'Moderation API: a case'
+  uriPattern: 'neos/moderation/api/cases/{caseId}'
+  httpMethods: ['GET']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApi'
+    '@action': 'case'
+    '@format': 'json'
+-
+  name: 'Moderation API: corrections of a case'
+  uriPattern: 'neos/moderation/api/cases/{caseId}/corrections'
+  httpMethods: ['POST']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApi'
+    '@action': 'correct'
+    '@format': 'json'
+-
+  name: 'Moderation API: approve a case'
+  uriPattern: 'neos/moderation/api/cases/{caseId}/approve'
+  httpMethods: ['POST']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApi'
+    '@action': 'approve'
+    '@format': 'json'
+-
+  name: 'Moderation API: reject a case'
+  uriPattern: 'neos/moderation/api/cases/{caseId}/reject'
+  httpMethods: ['POST']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApi'
+    '@action': 'reject'
+    '@format': 'json'

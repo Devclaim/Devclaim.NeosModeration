@@ -1,0 +1,21 @@
+{
+	"name": "@devclaim/neos-moderation-app",
+	"license": "GPL-3.0-or-later",
+	"private": true,
+	"scripts": {
+		"build": "node esbuild.mjs",
+		"watch": "node esbuild.mjs --watch",
+		"check": "tsc --noEmit -p ."
+	},
+	"dependencies": {
+		"react": "18.3.1",
+		"react-dom": "18.3.1"
+	},
+	"devDependencies": {
+		"@types/react": "^18.3.0",
+		"@types/react-dom": "^18.3.0",
+		"esbuild": "~0.27.2",
+		"typescript": "^5.4.2"
+	},
+	"packageManager": "yarn@3.2.1"
+}

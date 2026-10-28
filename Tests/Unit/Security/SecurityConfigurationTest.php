@@ -27,19 +27,30 @@ final class SecurityConfigurationTest extends TestCase
         self::assertStringNotContainsString('Publishing', serialize($role));
     }
 
-    public function testDecisionActionsArePolicyProtectedAndFormsCarryCsrfTokens(): void
+    public function testDecisionActionsArePolicyProtectedPostOnlyAndBehindTheBackendLogin(): void
     {
         $policy = Yaml::parseFile($this->packagePath('Configuration/Policy.yaml'));
         $methodTargets = $policy['privilegeTargets'][
             'Neos\\Flow\\Security\\Authorization\\Privilege\\Method\\MethodPrivilege'
         ];
         $matcher = $methodTargets['Devclaim.NeosModeration:Backend.Actions']['matcher'];
-        $detailFusion = file_get_contents($this->packagePath('Resources/Private/Fusion/Views/Show.fusion'));
+        self::assertStringContainsString('(cases|case|correct|approve|reject)Action()', $matcher);
 
-        self::assertStringContainsString('approve|reject', $matcher);
-        self::assertIsString($detailFusion);
-        self::assertSame(2, substr_count($detailFusion, 'method="post"'));
-        self::assertSame(2, substr_count($detailFusion, 'name="__csrfToken"'));
+        // writing actions only answer POST, which Flow protects with the CSRF token of the session
+        $routes = Yaml::parseFile($this->packagePath('Configuration/Routes.yaml'));
+        foreach ($routes as $route) {
+            if (in_array($route['defaults']['@action'], ['correct', 'approve', 'reject'], true)) {
+                self::assertSame(['POST'], $route['httpMethods'], $route['name']);
+            }
+        }
+
+        $settings = Yaml::parseFile($this->packagePath('Configuration/Settings.yaml'));
+        $pattern = $settings['Neos']['Flow']['security']['authentication']['providers']['Neos.Neos:Backend']
+            ['requestPatterns']['Devclaim.NeosModeration:Controllers'];
+        self::assertSame(
+            'Devclaim\\NeosModeration\\Controller\\.*',
+            $pattern['patternOptions']['controllerObjectNamePattern'],
+        );
     }
 
     private function packagePath(string $relativePath): string

@@ -27,4 +27,10 @@ interface ModerationCaseStoreInterface
 
     /** @return list<ModerationCase> */
     public function findByQuery(ModerationCaseQuery $query): array;
+
+    /**
+     * @param list<string> $allowedTypeKeys
+     * @return array<string, int> status value => number of cases
+     */
+    public function countByStatus(array $allowedTypeKeys): array;
 }

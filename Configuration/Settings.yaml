@@ -3,10 +3,26 @@ Devclaim:
     types: {}
 
 Neos:
+  Flow:
+    mvc:
+      routes:
+        'Devclaim.NeosModeration':
+          position: 'before Neos.Neos'
+    security:
+      authentication:
+        providers:
+          'Neos.Neos:Backend':
+            requestPatterns:
+              # the app and its API use the Neos backend session; not logged in: the login of Neos, then back
+              'Devclaim.NeosModeration:Controllers':
+                pattern: 'ControllerObjectName'
+                patternOptions:
+                  controllerObjectNamePattern: 'Devclaim\NeosModeration\Controller\.*'
   Neos:
     moduleConfiguration:
       # Neos 9.2's login redirect falls through to current([]) for a leaf-only root module.
-      # Keep the existing preferences and add moderation before the user fallback.
+      # Keep the existing preferences and add moderation before the user fallback: moderators without the content
+      # module land in the moderation app, which has the address of the module (Routes.yaml).
       preferredStartModules: ['content', 'moderation', 'user/usersettings']
     modules:
       moderation:

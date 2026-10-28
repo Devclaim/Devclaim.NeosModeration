@@ -50,6 +50,15 @@ class ModerationCase
     #[ORM\Column(name: 'private_metadata', type: 'json', nullable: true)]
     protected ?array $privateMetadata;
 
+    /**
+     * The moderator's version of payload fields, while the case is pending; the payload stays as submitted
+     *
+     * @var array|null
+     * @phpstan-var array<string, mixed>|null
+     */
+    #[ORM\Column(name: 'corrections', type: 'json', nullable: true)]
+    protected ?array $corrections = null;
+
     #[ORM\Column(name: 'submitted_at', type: 'datetime_immutable')]
     protected DateTimeImmutable $submittedAt;
 
@@ -110,6 +119,45 @@ class ModerationCase
         $this->submittedAt = $submittedAt;
         $this->auditEntries = new ArrayCollection();
         $this->appendAudit(AuditEvent::Submitted, null, $submittedAt, ['typeKey' => $typeKey, 'locale' => $locale]);
+    }
+
+    /**
+     * Replaces the corrections: the moderator's values of payload fields, validated by the type handler. Values equal
+     * to the submitted ones are no correction. Only pending cases can be corrected; the payload never changes.
+     *
+     * @param array<string, mixed> $corrections
+     */
+    public function correct(array $corrections, string $moderatorIdentifier, DateTimeImmutable $correctedAt): void
+    {
+        $this->assertPending();
+        foreach (array_keys($corrections) as $field) {
+            if (!array_key_exists($field, $this->payload)) {
+                throw new InvalidArgumentException(sprintf('The payload has no field "%s" to correct.', $field));
+            }
+        }
+        $corrections = array_filter(
+            $corrections,
+            fn(mixed $value, string $field): bool => $this->payload[$field] !== $value,
+            ARRAY_FILTER_USE_BOTH,
+        );
+        $previous = $this->corrections ?? [];
+        $changed = array_keys(array_filter(
+            array_replace($previous, $corrections),
+            static fn(mixed $value, string $field): bool => !array_key_exists($field, $previous)
+                || !array_key_exists($field, $corrections)
+                || $previous[$field] !== $corrections[$field],
+            ARRAY_FILTER_USE_BOTH,
+        ));
+        if ($changed === []) {
+            return;
+        }
+        $this->corrections = $corrections === [] ? null : $corrections;
+        $this->appendAudit(
+            AuditEvent::Corrected,
+            $moderatorIdentifier,
+            $correctedAt,
+            ['fields' => implode(',', $changed)],
+        );
     }
 
     /** @param array<string, scalar|null> $auditContext */
@@ -213,6 +261,18 @@ class ModerationCase
     public function getPrivateMetadata(): ?array
     {
         return $this->privateMetadata;
+    }
+
+    /** @return array<string, mixed> */
+    public function getCorrections(): array
+    {
+        return $this->corrections ?? [];
+    }
+
+    /** @return array<string, mixed> the payload with the corrections applied: what an approval works with */
+    public function getEffectivePayload(): array
+    {
+        return array_replace($this->payload, $this->corrections ?? []);
     }
 
     public function getSubmittedAt(): DateTimeImmutable

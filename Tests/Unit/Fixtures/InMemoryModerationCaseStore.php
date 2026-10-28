@@ -45,6 +45,17 @@ final class InMemoryModerationCaseStore implements ModerationCaseStoreInterface
         return $this->find($id);
     }
 
+    public function countByStatus(array $allowedTypeKeys): array
+    {
+        $counts = [];
+        foreach ($this->cases as $case) {
+            if (in_array($case->getTypeKey(), $allowedTypeKeys, true)) {
+                $counts[$case->getStatus()->value] = ($counts[$case->getStatus()->value] ?? 0) + 1;
+            }
+        }
+        return $counts;
+    }
+
     public function findByQuery(ModerationCaseQuery $query): array
     {
         return array_values(array_filter(

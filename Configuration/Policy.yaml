@@ -2,7 +2,7 @@ privilegeTargets:
   'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
     'Devclaim.NeosModeration:Backend.Actions':
       label: 'Access moderation backend controller actions'
-      matcher: 'method(Devclaim\NeosModeration\Controller\ModerationController->(index|show|approve|reject)Action())'
+      matcher: 'method(Devclaim\NeosModeration\Controller\ModerationController->indexAction()) || method(Devclaim\NeosModeration\Controller\ModerationAppController->indexAction()) || method(Devclaim\NeosModeration\Controller\ModerationApiController->(cases|case|correct|approve|reject)Action())'
 
   'Neos\Neos\Security\Authorization\Privilege\ModulePrivilege':
     'Devclaim.NeosModeration:Backend.Module':

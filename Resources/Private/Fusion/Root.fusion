@@ -1,2 +1,0 @@
-include: resource://Neos.Fusion/Private/Fusion/Root.fusion
-include: resource://Devclaim.NeosModeration/Private/Fusion/**/*.fusion
