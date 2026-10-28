@@ -153,23 +153,37 @@ final class ModerationCaseService
         });
     }
 
+    /**
+     * Rejects a pending case in the same three steps as an approval: checks it (locked), runs the handler, if the
+     * type has one ({@see RejectionHandlerInterface}), outside of a transaction, and records the decision (locked).
+     */
     public function reject(ModerationCaseId $id, ?string $reason = null): ModerationCase
     {
-        return $this->caseStore->transactional(function () use ($id, $reason): ModerationCase {
+        $checked = $this->caseStore->transactional(function () use ($id): ModerationCase {
             $case = $this->caseStore->findForUpdate($id) ?? throw ModerationCaseNotFound::withId($id);
-            $handler = $this->typeRegistry->get($case->getTypeKey());
-            $this->authorization->assertCanAccessType($handler);
+            $this->authorization->assertCanAccessType($this->typeRegistry->get($case->getTypeKey()));
+            if ($case->getStatus() === ModerationStatus::Approved) {
+                throw CaseAlreadyDecided::withStatus($case->getStatus());
+            }
+            return $case;
+        });
+        if ($checked->getStatus() === ModerationStatus::Rejected) {
+            return $checked;
+        }
 
+        $handler = $this->typeRegistry->get($checked->getTypeKey());
+        $result = $handler instanceof RejectionHandlerInterface
+            ? $handler->reject($checked, $reason)
+            : new RejectionResult();
+
+        return $this->caseStore->transactional(function () use ($id, $reason, $result): ModerationCase {
+            $case = $this->caseStore->findForUpdate($id) ?? throw ModerationCaseNotFound::withId($id);
             if ($case->getStatus() === ModerationStatus::Rejected) {
                 return $case;
             }
             if ($case->getStatus() !== ModerationStatus::Pending) {
                 throw CaseAlreadyDecided::withStatus($case->getStatus());
             }
-
-            $result = $handler instanceof RejectionHandlerInterface
-                ? $handler->reject($case, $reason)
-                : new RejectionResult();
             $case->reject(
                 $this->actorProvider->requireActorIdentifier(),
                 $this->clock->now(),

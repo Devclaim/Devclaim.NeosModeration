@@ -34,6 +34,7 @@ final class ModerationCaseServiceTest extends TestCase
     {
         $this->handler = new TestTypeHandler();
         $this->store = new InMemoryModerationCaseStore();
+        $this->handler->store = $this->store;
         $this->authorization = new TestAuthorization();
         $this->service = new ModerationCaseService(
             $this->registry($this->handler),
@@ -115,6 +116,47 @@ final class ModerationCaseServiceTest extends TestCase
 
         $this->expectException(CaseAlreadyDecided::class);
         $this->service->correct($this->case->getId(), ['title' => 'Late']);
+    }
+
+    public function testHandlersRunOutsideOfTransactions(): void
+    {
+        $this->service->approve($this->case->getId());
+        $other = new ModerationCase(
+            ModerationCaseId::fromString('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+            'test.example',
+            'de',
+            ['title' => 'Other'],
+            null,
+            new DateTimeImmutable('2026-10-27T10:30:00+00:00'),
+        );
+        $this->store->add($other);
+        $this->service->reject($other->getId(), 'Spam');
+
+        self::assertSame(['approved', 'rejected'], $this->handler->hooks);
+    }
+
+    public function testRepeatedRejectionIsIdempotent(): void
+    {
+        $first = $this->service->reject($this->case->getId(), 'Spam');
+        $second = $this->service->reject($this->case->getId(), 'Ignored');
+
+        self::assertSame($first, $second);
+        self::assertSame(['rejected'], $this->handler->hooks);
+        self::assertSame(ModerationStatus::Rejected, $this->case->getStatus());
+        self::assertSame('Spam', $this->case->getDecisionReason());
+        self::assertSame(1, $this->store->updates);
+    }
+
+    public function testRejectionAfterApprovalDoesNotRunTheHandler(): void
+    {
+        $this->service->approve($this->case->getId());
+
+        try {
+            $this->service->reject($this->case->getId());
+            self::fail('An approved case must not be rejected.');
+        } catch (CaseAlreadyDecided) {
+            self::assertSame(['approved'], $this->handler->hooks);
+        }
     }
 
     public function testOppositeDecisionAfterApprovalIsRejected(): void

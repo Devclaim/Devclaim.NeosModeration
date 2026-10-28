@@ -152,11 +152,17 @@ null, details: [{label, value}], links: [{label, uri}]}`; the preview uses the p
 ## Transaction and idempotency contract
 
 Decisions lock the case inside a Doctrine transaction. A recorded decision of the same kind returns the existing case
-without running the handler again; the opposite decision fails. An approval checks the case (locked), runs the
-handler outside of a transaction, then records the decision (locked again): handlers may write to other stores, e.g.
-the event-sourced content repository, which cannot commit inside a transaction of the same connection. Handlers must
-therefore be idempotent by the stable case identifier: a repeated or concurrent approval runs them again, and they
-find what they created before (e.g. a node whose id is derived from the case).
+without running the handler again; the opposite decision fails. An approval or rejection checks the case (locked),
+runs the handler outside of a transaction (`approve()`, or `reject()` of a `RejectionHandlerInterface`), then records
+the decision (locked again): handlers may write to other stores, e.g. the event-sourced content repository, which
+cannot commit inside a transaction of the same connection. Handlers must therefore be idempotent by the stable case
+identifier: a repeated or concurrent decision runs them again, and they find what they created before (e.g. a node
+whose id is derived from the case).
+
+A type that prepares something as soon as a case arrives (e.g. the content moderators review and edit before
+deciding) implements `SubmissionAwareTypeHandlerInterface`: `submitted()` runs after the case is stored, outside of
+the transaction. A failure there does not undo the submission; it is logged (`Neos.Flow:SystemLogger`), and the
+handler catches up when the case is decided.
 
 Only trusted application code should call `SubmitModerationCase`. Public endpoints remain the responsibility of the
 project and must authenticate the caller, rate-limit it, verify spam protection, and sanitize inputs before invoking

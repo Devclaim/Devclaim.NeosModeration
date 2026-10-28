@@ -19,20 +19,7 @@ final class SubmitModerationCaseTest extends TestCase
 {
     public function testSubmissionStoresOnlyHandlerValidatedPayloadAndInitialAuditEntry(): void
     {
-        $handler = new TestTypeHandler();
-        $objectManager = $this->createMock(ObjectManagerInterface::class);
-        $objectManager->method('get')->willReturn($handler);
-        $registry = new ModerationTypeRegistry($objectManager);
-        (new ReflectionProperty($registry, 'typeConfiguration'))->setValue(
-            $registry,
-            ['test.example' => ['handler' => TestTypeHandler::class]],
-        );
-        $store = new InMemoryModerationCaseStore();
-        $service = new SubmitModerationCase(
-            $registry,
-            $store,
-            new FixedClock(new DateTimeImmutable('2026-10-27T10:00:00+00:00')),
-        );
+        [$service, $store, $handler] = $this->service();
 
         $case = $service->submit(
             'test.example',
@@ -46,5 +33,39 @@ final class SubmitModerationCaseTest extends TestCase
         self::assertSame(AuditEvent::Submitted, $case->getAuditEntries()[0]->getEvent());
         self::assertSame($case, $store->find($case->getId()));
         self::assertSame(1, $store->transactions);
+        // prepared after the case is stored, outside of the transaction
+        self::assertSame(['submitted'], $handler->hooks);
+    }
+
+    public function testAFailingPreparationKeepsTheSubmission(): void
+    {
+        [$service, $store, $handler] = $this->service();
+        $handler->failSubmission = true;
+
+        $case = $service->submit('test.example', 'de', ['title' => 'Kept']);
+
+        self::assertSame($case, $store->find($case->getId()));
+        self::assertSame(['submitted'], $handler->hooks);
+    }
+
+    /** @return array{0: SubmitModerationCase, 1: InMemoryModerationCaseStore, 2: TestTypeHandler} */
+    private function service(): array
+    {
+        $handler = new TestTypeHandler();
+        $objectManager = $this->createMock(ObjectManagerInterface::class);
+        $objectManager->method('get')->willReturn($handler);
+        $registry = new ModerationTypeRegistry($objectManager);
+        (new ReflectionProperty($registry, 'typeConfiguration'))->setValue(
+            $registry,
+            ['test.example' => ['handler' => TestTypeHandler::class]],
+        );
+        $store = new InMemoryModerationCaseStore();
+        $handler->store = $store;
+
+        return [
+            new SubmitModerationCase($registry, $store, new FixedClock(new DateTimeImmutable('2026-10-27T10:00:00+00:00'))),
+            $store,
+            $handler,
+        ];
     }
 }

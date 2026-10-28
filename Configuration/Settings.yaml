@@ -25,7 +25,8 @@ Neos:
     moduleConfiguration:
       # Neos 9.2's login redirect falls through to current([]) for a leaf-only root module.
       # Keep the existing preferences and add moderation before the user fallback: moderators without the content
-      # module land in the moderation app, which has the address of the module (Routes.yaml).
+      # module land in the moderation app, which has the address of the module (Routes.yaml). Moderators who may
+      # open the content module but not publish to live land there too (ModeratorStartAspect).
       preferredStartModules: ['content', 'moderation', 'user/usersettings']
     modules:
       moderation:

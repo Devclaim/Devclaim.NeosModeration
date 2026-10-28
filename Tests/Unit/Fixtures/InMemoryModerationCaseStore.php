@@ -16,11 +16,17 @@ final class InMemoryModerationCaseStore implements ModerationCaseStoreInterface
     public int $lockedReads = 0;
     public int $transactions = 0;
     public int $updates = 0;
+    public bool $inTransaction = false;
 
     public function transactional(callable $operation): mixed
     {
         $this->transactions++;
-        return $operation();
+        $this->inTransaction = true;
+        try {
+            return $operation();
+        } finally {
+            $this->inTransaction = false;
+        }
     }
 
     public function add(ModerationCase $case): void

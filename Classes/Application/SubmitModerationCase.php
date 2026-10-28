@@ -8,12 +8,17 @@ use Devclaim\NeosModeration\Domain\Model\ModerationCase;
 use Devclaim\NeosModeration\Domain\Repository\ModerationCaseStoreInterface;
 use Devclaim\NeosModeration\Domain\Service\ClockInterface;
 use Devclaim\NeosModeration\Domain\Service\ModerationTypeRegistry;
+use Devclaim\NeosModeration\Domain\Service\SubmissionAwareTypeHandlerInterface;
 use Devclaim\NeosModeration\Domain\ValueObject\ModerationCaseId;
 use Neos\Flow\Annotations as Flow;
+use Psr\Log\LoggerInterface;
 
 #[Flow\Scope('singleton')]
 final class SubmitModerationCase
 {
+    #[Flow\Inject(name: 'Neos.Flow:SystemLogger')]
+    protected ?LoggerInterface $logger = null;
+
     public function __construct(
         private readonly ModerationTypeRegistry $typeRegistry,
         private readonly ModerationCaseStoreInterface $caseStore,
@@ -45,9 +50,23 @@ final class SubmitModerationCase
             $this->clock->now(),
         );
 
-        return $this->caseStore->transactional(function () use ($case): ModerationCase {
+        $this->caseStore->transactional(function () use ($case): void {
             $this->caseStore->add($case);
-            return $case;
         });
+        if ($handler instanceof SubmissionAwareTypeHandlerInterface) {
+            try {
+                $handler->submitted($case);
+            } catch (\Throwable $throwable) {
+                // the case is stored: the handler catches up when it is decided
+                $this->logger?->error(sprintf(
+                    'Moderation: preparing case %s of type "%s" failed: %s',
+                    $case->getId()->value,
+                    $typeKey,
+                    $throwable->getMessage(),
+                ), ['exception' => $throwable]);
+            }
+        }
+
+        return $case;
     }
 }
