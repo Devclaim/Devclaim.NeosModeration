@@ -77,8 +77,10 @@ export type CaseDetail = CaseSummary & {
 	correctedValues: Record<string, unknown>;
 	effective: Record<string, unknown>;
 	fields: { label: string; value: string }[];
-	/** e.g. to what an approval created */
+	/** e.g. to where the case is edited, to what an approval created */
 	links: { label: string; uri: string; note?: string }[];
+	/** what a decision does, for its confirmation (else a general text) */
+	decisionHints: { approve?: string; reject?: string };
 	privateMetadata: Record<string, unknown> | null;
 	correctable: CorrectableField[];
 	preview: { uri: string; data: Record<string, unknown>; submitted: Record<string, unknown> } | null;

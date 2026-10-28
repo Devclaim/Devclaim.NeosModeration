@@ -222,6 +222,7 @@ final class ModerationApiController extends ActionController
                 $presentation->fields,
             ),
             'links' => $presentation->links,
+            'decisionHints' => (object)$presentation->decisionHints,
             'privateMetadata' => $this->moderationCaseService->canViewPrivateMetadata($case)
                 ? $case->getPrivateMetadata()
                 : null,

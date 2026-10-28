@@ -8,8 +8,9 @@ import { Icon } from './Icon';
 type View = 'corrected' | 'submitted';
 
 /**
- * One case: the preview as the website shows it, the correctable fields, the private contact data, the history and
- * the decision. On phones a screen of its own with the decision buttons fixed at the bottom.
+ * One case: the preview as the website shows it, the correctable fields (or what was submitted), where it is edited
+ * (links of the type, e.g. into Neos), the private contact data, the history and the decision. On phones a screen of
+ * its own with the decision buttons fixed at the bottom: enough to decide on the way.
  */
 export function CaseDetail({
 	api,
@@ -168,6 +169,23 @@ export function CaseDetail({
 				</div>
 
 				<aside className="detail-panel" aria-label="Angaben">
+					{pending && detail.links.length > 0 && (
+						<section className="panel-section item-links">
+							{detail.links.map((link, index) => (
+								<div key={link.label} className="decision-link">
+									{link.uri ? (
+										<a className={index === 0 ? 'button button-primary' : 'button'} href={link.uri}>
+											{link.label}
+										</a>
+									) : (
+										<strong>{link.label}</strong>
+									)}
+									{link.note && <p className="hint">{link.note}</p>}
+								</div>
+							))}
+						</section>
+					)}
+
 					{!pending && (
 						<section className={`panel-section decision decision-${detail.status}`}>
 							<h3 className="section-title">Entscheidung</h3>
@@ -191,7 +209,7 @@ export function CaseDetail({
 						</section>
 					)}
 
-					{detail.correctable.length > 0 || pending ? (
+					{detail.correctable.length > 0 ? (
 						<Fields
 							fields={detail.correctable}
 							values={values}
@@ -201,8 +219,9 @@ export function CaseDetail({
 							onCommit={correct}
 						/>
 					) : detail.preview ? (
+						// what was sent, next to the preview of the current state (the type may have changed it since)
 						<section className="panel-section">
-							<h3 className="section-title">Angaben</h3>
+							<h3 className="section-title">Eingesendet</h3>
 							<dl className="presentation">
 								{detail.fields.map((field) => (
 									<div key={field.label}>
@@ -272,6 +291,7 @@ export function CaseDetail({
 			{decision && (
 				<DecisionDialog
 					kind={decision}
+					hint={detail.decisionHints[decision]}
 					onCancel={() => setDecision(null)}
 					onConfirm={async (reason) => {
 						try {
@@ -301,10 +321,13 @@ function fieldLabels(detail: Detail, fields: string): string {
 
 function DecisionDialog({
 	kind,
+	hint,
 	onCancel,
 	onConfirm
 }: {
 	kind: 'approve' | 'reject';
+	/** what the decision does (the type's text) */
+	hint?: string;
 	onCancel: () => void;
 	onConfirm: (reason: string) => Promise<void>;
 }) {
@@ -327,11 +350,7 @@ function DecisionDialog({
 				}}
 			>
 				<h2 id="decision-title">{approve ? 'Vorschlag annehmen?' : 'Vorschlag ablehnen?'}</h2>
-				<p className="muted">
-					{approve
-						? 'Mit Ihren Korrekturen entsteht ein versteckter Entwurf. Erst wenn die Redaktion ihn einblendet und veröffentlicht, steht er im Kalender.'
-						: 'Die Entscheidung wird festgehalten. Es entsteht keine Veranstaltung.'}
-				</p>
+				<p className="muted">{hint ?? 'Die Entscheidung wird festgehalten.'}</p>
 				<label className="field-label" htmlFor="decision-reason">
 					Begründung <span className="muted">(optional, nur intern)</span>
 				</label>

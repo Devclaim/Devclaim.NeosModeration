@@ -35,6 +35,11 @@ website would (`getPreviewUri()`, on the same host). The app shows it in an ifra
 (`{"type": "moderation:preview", key, data, editable}`); the page answers with its height and with corrections of
 fields edited in place (`{"type": "moderation:correct", field, value}`).
 
+A type whose cases are edited elsewhere (e.g. as content in Neos) needs neither: its presentation (`present()`) gives
+the links there (`CasePresentation::$links`, shown above the details while the case is pending, and with the decision
+afterwards) and its preview shows the current state. `CasePresentation::$decisionHints` (`approve`, `reject`) says in
+the confirmation what a decision does; next to the preview the app lists the presented fields as "Eingesendet".
+
 ## Registering a type
 
 The following fictional example belongs in the consuming project package, not in this package's production
