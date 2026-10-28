@@ -207,6 +207,7 @@ final class ModerationApiController extends ActionController
                 static fn($field): array => ['label' => $field->label, 'value' => $field->value],
                 $presentation->fields,
             ),
+            'links' => $presentation->links,
             'privateMetadata' => $this->moderationCaseService->canViewPrivateMetadata($case)
                 ? $case->getPrivateMetadata()
                 : null,

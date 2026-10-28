@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type Api, ApiError, type CaseDetail as Detail, type CaseList, type Configuration, type Status } from './api';
 import { CaseDetail } from './CaseDetail';
+import { CollectionScreen } from './CollectionScreen';
 import { ago, apiErrorMessage, STATUS_LABELS } from './format';
 import { Icon } from './Icon';
 
 type Filter = Status | 'all';
-type Location = { status: Filter; type: string; q: string; caseId: string | null };
+type Location = { status: Filter; type: string; q: string; caseId: string | null; screen: string | null; item: string | null };
 
 const FILTERS: Filter[] = ['pending', 'approved', 'rejected', 'all'];
 
@@ -17,7 +18,9 @@ function readLocation(): Location {
 		status: status && FILTERS.includes(status) ? status : 'pending',
 		type: params.get('type') ?? '',
 		q: params.get('q') ?? '',
-		caseId: params.get('case')
+		caseId: params.get('case'),
+		screen: params.get('screen'),
+		item: params.get('item')
 	};
 }
 
@@ -27,6 +30,8 @@ function writeLocation(location: Location, replace: boolean) {
 	if (location.type) params.set('type', location.type);
 	if (location.q) params.set('q', location.q);
 	if (location.caseId) params.set('case', location.caseId);
+	if (location.screen) params.set('screen', location.screen);
+	if (location.item) params.set('item', location.item);
 	const url = `${window.location.pathname}${params.size > 0 ? `?${params}` : ''}`;
 	window.history[replace ? 'replaceState' : 'pushState'](null, '', url);
 }
@@ -104,15 +109,19 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	const counts = list?.counts ?? {};
 	const total = useMemo(() => Object.values(counts).reduce((sum, count) => sum + (count ?? 0), 0), [counts]);
 	const countOf = (filter: Filter) => (filter === 'all' ? total : (counts[filter] ?? 0));
+	const screen = configuration.screens.find((candidate) => candidate.key === location.screen) ?? null;
+	const showsDetail = screen ? location.item !== null : location.caseId !== null;
 
 	return (
-		<div className="app" data-view={location.caseId ? 'detail' : 'list'}>
+		<div className="app" data-view={showsDetail ? 'detail' : 'list'} data-tabs={configuration.screens.length > 0 || undefined}>
 			<header className="topbar">
 				<a className="brand" href="/neos/moderation">
 					<Icon name="shield" size={18} />
 					<span>Moderation</span>
 				</a>
-				{(counts.pending ?? 0) > 0 && <span className="badge badge-pending" aria-label={`${counts.pending} offen`}>{counts.pending}</span>}
+				{configuration.screens.length === 0 && (counts.pending ?? 0) > 0 && (
+					<span className="badge badge-pending" aria-label={`${counts.pending} offen`}>{counts.pending}</span>
+				)}
 				<div className="topbar-end">
 					<span className="user" title={configuration.user}>{configuration.user}</span>
 					<form method="post" action={configuration.logoutUri}>
@@ -124,7 +133,30 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 				</div>
 			</header>
 
+			{configuration.screens.length > 0 && (
+				<nav className="tabs" aria-label="Bereiche">
+					<button type="button" aria-current={screen === null ? 'page' : undefined} onClick={() => navigate({ screen: null, item: null, caseId: null })}>
+						Eingang
+						{(counts.pending ?? 0) > 0 && <span className="badge badge-pending">{counts.pending}</span>}
+					</button>
+					{configuration.screens.map((candidate) => (
+						<button
+							key={candidate.key}
+							type="button"
+							aria-current={screen?.key === candidate.key ? 'page' : undefined}
+							onClick={() => navigate({ screen: candidate.key, item: null, caseId: null })}
+						>
+							{candidate.label}
+						</button>
+					))}
+				</nav>
+			)}
+
 			<div className="layout">
+				{screen ? (
+					<CollectionScreen key={screen.key} api={api} screen={screen} itemId={location.item} onSelect={(item) => navigate({ item })} />
+				) : (
+				<>
 				<nav className="filters" aria-label="Filter">
 					<label className="search">
 						<Icon name="search" />
@@ -215,6 +247,8 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 						</div>
 					)}
 				</main>
+				</>
+				)}
 			</div>
 
 			<div className="toast" role="status" aria-live="polite">

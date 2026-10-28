@@ -8,6 +8,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Package\PackageManager;
 use Neos\Flow\ResourceManagement\ResourceManager;
+use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
 use Neos\Flow\Security\Context;
 use Neos\Neos\Domain\Service\UserService;
 
@@ -20,7 +21,12 @@ use Neos\Neos\Domain\Service\UserService;
 #[Flow\Scope('singleton')]
 final class ModerationAppController extends ActionController
 {
+    /** @var array<string, array{label?: string, uri?: string, privilegeTarget?: string}> */
+    #[Flow\InjectConfiguration(path: 'screens', package: 'Devclaim.NeosModeration')]
+    protected array $screens = [];
+
     public function __construct(
+        private readonly PrivilegeManagerInterface $privilegeManager,
         private readonly ResourceManager $resourceManager,
         private readonly PackageManager $packageManager,
         private readonly Context $securityContext,
@@ -42,6 +48,7 @@ final class ModerationAppController extends ActionController
             'user' => $user?->getLabel() ?? '',
             'backendUri' => '/neos',
             'logoutUri' => '/neos/logout',
+            'screens' => $this->accessibleScreens(),
         ];
         $escape = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_HTML5);
         $json = json_encode(
@@ -67,6 +74,25 @@ final class ModerationAppController extends ActionController
 <script type="module" src="' . $escape($this->asset('app.js')) . '"></script>
 </body>
 </html>';
+    }
+
+    /**
+     * The screens of other packages the user may open (setting Devclaim.NeosModeration.screens)
+     *
+     * @return list<array{key: string, label: string, uri: string}>
+     */
+    private function accessibleScreens(): array
+    {
+        $screens = [];
+        foreach ($this->screens as $key => $screen) {
+            $privilegeTarget = $screen['privilegeTarget'] ?? '';
+            $allowed = $this->securityContext->hasRole('Neos.Neos:Administrator')
+                || ($privilegeTarget !== '' && $this->privilegeManager->isPrivilegeTargetGranted($privilegeTarget));
+            if ($allowed && isset($screen['label'], $screen['uri'])) {
+                $screens[] = ['key' => (string)$key, 'label' => $screen['label'], 'uri' => $screen['uri']];
+            }
+        }
+        return $screens;
     }
 
     /** the public URI of a file of the built app, with its modification time against stale browser caches */

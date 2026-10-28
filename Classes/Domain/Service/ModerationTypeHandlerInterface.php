@@ -34,7 +34,8 @@ interface ModerationTypeHandlerInterface
     public function present(ModerationCase $case): CasePresentation;
 
     /**
-     * Implementations must participate in the current transaction or be idempotent by case identifier.
+     * Runs outside of a transaction, before the approval is recorded: implementations must be idempotent by the case
+     * identifier (a repeated or concurrent approval runs them again).
      */
     public function approve(ModerationCase $case): ApprovalResult;
 }

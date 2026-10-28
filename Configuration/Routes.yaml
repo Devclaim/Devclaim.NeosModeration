@@ -8,6 +8,8 @@
     '@controller': 'ModerationApp'
     '@action': 'index'
     '@format': 'html'
+  # the state of the app is in the query (?case=…&screen=…): kept when the login sends the user back
+  appendExceedingArguments: true
 -
   name: 'Moderation API: cases'
   uriPattern: 'neos/moderation/api/cases'

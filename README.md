@@ -40,10 +40,10 @@ configuration:
 ```yaml
 # Acme.Site/Configuration/Settings.yaml
 Devclaim:
-    NeosModeration:
-        types:
-            'acme.example':
-                handler: 'Acme\Site\Moderation\ExampleTypeHandler'
+        NeosModeration:
+                types:
+                        'acme.example':
+                                handler: 'Acme\Site\Moderation\ExampleTypeHandler'
 ```
 
 The handler implements `ModerationTypeHandlerInterface`. It validates all submission values and limits before it
@@ -101,20 +101,20 @@ Define the handler's method privilege targets and a project-specific child role:
 ```yaml
 # Acme.Site/Configuration/Policy.yaml
 privilegeTargets:
-    'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
-        'Acme.Site:Moderation.Example':
-            matcher: 'method(Acme\Site\Moderation\ExamplePermissionSubject->access())'
-        'Acme.Site:Moderation.Example.PrivateMetadata':
-            matcher: 'method(Acme\Site\Moderation\ExamplePrivatePermissionSubject->access())'
+        'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
+                'Acme.Site:Moderation.Example':
+                        matcher: 'method(Acme\Site\Moderation\ExamplePermissionSubject->access())'
+                'Acme.Site:Moderation.Example.PrivateMetadata':
+                        matcher: 'method(Acme\Site\Moderation\ExamplePrivatePermissionSubject->access())'
 
 roles:
-    'Acme.Site:ExampleModerator':
-        parentRoles: ['Devclaim.NeosModeration:Moderator']
-        privileges:
-            - privilegeTarget: 'Acme.Site:Moderation.Example'
-                permission: GRANT
-            - privilegeTarget: 'Acme.Site:Moderation.Example.PrivateMetadata'
-                permission: GRANT
+        'Acme.Site:ExampleModerator':
+                parentRoles: ['Devclaim.NeosModeration:Moderator']
+                privileges:
+                        - privilegeTarget: 'Acme.Site:Moderation.Example'
+                                permission: GRANT
+                        - privilegeTarget: 'Acme.Site:Moderation.Example.PrivateMetadata'
+                                permission: GRANT
 ```
 
 Privilege targets are identifiers evaluated explicitly by the application service; their matcher is never used to
@@ -126,13 +126,37 @@ shell access plus the moderation app and its API, and no type privilege. Consequ
 workspaces, publishing, redirects, users, packages, sites, or configuration. Neos administrators can access all
 registered moderation types; every other account must be granted the handler's exact type privilege.
 
+## Screens
+
+Other packages can add screens next to the inbox, e.g. a list of what approvals created. A screen is a setting and a
+JSON API; the app shows it to users with its privilege (administrators: all):
+
+```yaml
+Devclaim:
+    NeosModeration:
+        screens:
+            events:
+                label: 'Veranstaltungen'
+                uri: '/neos/moderation/api/events'
+                privilegeTarget: 'NeosSvelte.Events:EventLibrary'
+```
+
+`GET uri` answers `{title, filters, columns, items}`. `filters`: `{name, label, kind, options}` with kind `chips`,
+`select` or `period`; an item matches an option when its `filterValues[name]` is the option's value or a list
+containing it. `columns`: `{key, label}` shown from an item's `values`. An item: `{id, title, subtitle, color,
+status: {value, label, tone: success|warning|neutral}, values, filterValues, date, searchText, preview: {uri, data} |
+null, details: [{label, value}], links: [{label, uri}]}`; the preview uses the protocol of the case previews
+(read only). The API needs the backend session: add its controller to the request patterns of the provider
+`Neos.Neos:Backend` (see `Configuration/Settings.yaml`). New request patterns apply to sessions logged in afterwards.
+
 ## Transaction and idempotency contract
 
-Approval and rejection acquire a pessimistic lock on the case inside a Doctrine transaction. A repeated decision of
-the same kind returns the existing case without rerunning the handler; the opposite decision fails. Approval handlers
-that write through the same Doctrine connection participate in that transaction. Handlers that call an external or
-event-sourced system must additionally use the stable case identifier as an idempotency key, because no SQL
-transaction can atomically cover an unrelated store.
+Decisions lock the case inside a Doctrine transaction. A recorded decision of the same kind returns the existing case
+without running the handler again; the opposite decision fails. An approval checks the case (locked), runs the
+handler outside of a transaction, then records the decision (locked again): handlers may write to other stores, e.g.
+the event-sourced content repository, which cannot commit inside a transaction of the same connection. Handlers must
+therefore be idempotent by the stable case identifier: a repeated or concurrent approval runs them again, and they
+find what they created before (e.g. a node whose id is derived from the case).
 
 Only trusted application code should call `SubmitModerationCase`. Public endpoints remain the responsibility of the
 project and must authenticate the caller, rate-limit it, verify spam protection, and sanitize inputs before invoking

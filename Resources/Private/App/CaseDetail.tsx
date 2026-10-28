@@ -176,6 +176,18 @@ export function CaseDetail({
 								{detail.decidedAt && <> am {dateTime(detail.decidedAt)}</>}
 							</p>
 							{detail.decision.reason && <p className="quote">„{detail.decision.reason}“</p>}
+							{detail.links.map((link) => (
+								<div key={link.label} className="decision-link">
+									{link.uri ? (
+										<a className="button" href={link.uri}>
+											{link.label}
+										</a>
+									) : (
+										<strong>{link.label}</strong>
+									)}
+									{link.note && <p className="hint">{link.note}</p>}
+								</div>
+							))}
 						</section>
 					)}
 
@@ -317,7 +329,7 @@ function DecisionDialog({
 				<h2 id="decision-title">{approve ? 'Vorschlag annehmen?' : 'Vorschlag ablehnen?'}</h2>
 				<p className="muted">
 					{approve
-						? 'Die Entscheidung wird festgehalten. Der Vorschlag mit Ihren Korrekturen wird zur Veranstaltung.'
+						? 'Mit Ihren Korrekturen entsteht ein versteckter Entwurf. Erst wenn die Redaktion ihn einblendet und veröffentlicht, steht er im Kalender.'
 						: 'Die Entscheidung wird festgehalten. Es entsteht keine Veranstaltung.'}
 				</p>
 				<label className="field-label" htmlFor="decision-reason">

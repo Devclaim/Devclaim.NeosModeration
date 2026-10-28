@@ -6,6 +6,38 @@ export type Configuration = {
 	user: string;
 	backendUri: string;
 	logoutUri: string;
+	/** more screens next to the inbox (setting Devclaim.NeosModeration.screens), those the user may open */
+	screens: Screen[];
+};
+
+export type Screen = { key: string; label: string; uri: string };
+
+/** what the API of a screen answers (README "Screens") */
+export type Collection = {
+	title: string;
+	filters: {
+		name: string;
+		label: string;
+		kind: 'chips' | 'select' | 'period';
+		options: { value: string; label: string }[];
+	}[];
+	columns: { key: string; label: string }[];
+	items: CollectionItem[];
+};
+
+export type CollectionItem = {
+	id: string;
+	title: string;
+	subtitle: string;
+	color: string | null;
+	status: { value: string; label: string; tone: 'success' | 'warning' | 'neutral' };
+	values: Record<string, string>;
+	filterValues: Record<string, string | string[]>;
+	date: string | null;
+	searchText: string;
+	preview: { uri: string; data: Record<string, unknown> } | null;
+	details: { label: string; value: string }[];
+	links: { label: string; uri: string }[];
 };
 
 export type Status = 'pending' | 'approved' | 'rejected';
@@ -45,6 +77,8 @@ export type CaseDetail = CaseSummary & {
 	correctedValues: Record<string, unknown>;
 	effective: Record<string, unknown>;
 	fields: { label: string; value: string }[];
+	/** e.g. to what an approval created */
+	links: { label: string; uri: string; note?: string }[];
 	privateMetadata: Record<string, unknown> | null;
 	correctable: CorrectableField[];
 	preview: { uri: string; data: Record<string, unknown>; submitted: Record<string, unknown> } | null;
@@ -100,6 +134,17 @@ export function createApi(configuration: Configuration) {
 	const post = <T>(path: string, body: unknown) => request<T>(path, { method: 'POST', body: JSON.stringify(body) });
 
 	return {
+		collection: async (uri: string): Promise<Collection> => {
+			const response = await fetch(uri, { credentials: 'same-origin', headers: { accept: 'application/json' } });
+			if (response.redirected || !(response.headers.get('content-type') ?? '').includes('json')) {
+				window.location.reload();
+				throw new ApiError(401, 'loggedOut');
+			}
+			if (!response.ok) {
+				throw new ApiError(response.status, 'error');
+			}
+			return (await response.json()) as Collection;
+		},
 		cases: (status: Status | 'all', type: string, query: string) =>
 			request<CaseList>(`/cases?${new URLSearchParams({ status, type, q: query })}`),
 		case: (id: string) => request<CaseDetail>(`/cases/${encodeURIComponent(id)}`),

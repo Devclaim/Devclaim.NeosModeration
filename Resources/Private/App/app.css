@@ -618,6 +618,19 @@ textarea.control {
 	color: #d2d2d2;
 }
 
+.decision-link {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	margin-top: 4px;
+}
+
+.decision-link .button {
+	color: var(--text-strong);
+	text-decoration: none;
+}
+
 .history {
 	display: flex;
 	flex-direction: column;
@@ -883,5 +896,128 @@ textarea.control {
 
 	.detail-panel {
 		border-left: 1px solid var(--line);
+	}
+}
+
+/* the areas of the app (the inbox and the screens of other packages) */
+.tabs {
+	position: sticky;
+	top: var(--topbar);
+	z-index: 19;
+	display: flex;
+	gap: 4px;
+	overflow-x: auto;
+	padding: 0 12px;
+	background: #1c1c1c;
+	border-bottom: 1px solid var(--line);
+	scrollbar-width: none;
+}
+
+.tabs button {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: 8px;
+	min-height: 46px;
+	padding: 0 12px;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+}
+
+.tabs button[aria-current='page'] {
+	border-bottom-color: var(--accent);
+	color: var(--text-strong);
+	font-weight: 600;
+}
+
+.app[data-tabs] {
+	--tabs: 47px;
+}
+
+.app[data-tabs] .detail {
+	min-height: calc(100dvh - var(--topbar) - var(--tabs));
+}
+
+.tone {
+	display: inline-flex;
+	padding: 2px 9px;
+	border-radius: 10px;
+	font-size: 12px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.tone-success {
+	background: var(--success-soft);
+	color: var(--success-text);
+}
+
+.tone-warning {
+	background: var(--orange-soft);
+	color: var(--orange-text);
+}
+
+.tone-neutral {
+	background: var(--surface-raised);
+	color: var(--muted);
+}
+
+.color-dot {
+	display: inline-block;
+	width: 9px;
+	height: 9px;
+	margin-right: 8px;
+	border-radius: 50%;
+	vertical-align: 1px;
+}
+
+.case-meta {
+	flex-wrap: wrap;
+}
+
+.item-links .button {
+	color: var(--text-strong);
+	text-decoration: none;
+}
+
+@media (min-width: 760px) {
+	.app[data-tabs] .layout {
+		height: calc(100dvh - var(--topbar) - var(--tabs));
+	}
+
+	.app[data-tabs] .detail {
+		min-height: 100%;
+	}
+}
+
+/* phones and tablets: the dropdown filters in one row below the search and the chips */
+@media (max-width: 1179px) {
+	.filters {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+		gap: 10px 8px;
+	}
+
+	.filters > .search,
+	.filters > .filter-group {
+		grid-column: 1 / -1;
+	}
+
+	.type-filter {
+		gap: 4px;
+		min-width: 0;
+	}
+
+	.type-filter .section-title {
+		font-size: 11px;
+	}
+
+	.type-filter .control {
+		min-height: 40px;
+		padding: 6px 8px;
+		font-size: 14px;
 	}
 }

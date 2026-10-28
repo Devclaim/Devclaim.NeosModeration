@@ -111,21 +111,36 @@ final class ModerationCaseService
         return $this->authorization->canViewPrivateMetadata($this->typeRegistry->get($case->getTypeKey()));
     }
 
+    /**
+     * Approves a pending case in three steps: checks it (locked), runs the handler outside of a transaction (it may
+     * write to another store, e.g. the event-sourced content repository, which cannot commit inside one), and records
+     * the decision (locked again). Handlers must be idempotent by the case id: a repeated or concurrent approval runs
+     * them again and they find what they created before. An approval that is already recorded returns at once.
+     */
     public function approve(ModerationCaseId $id, ?string $reason = null): ModerationCase
     {
-        return $this->caseStore->transactional(function () use ($id, $reason): ModerationCase {
+        $checked = $this->caseStore->transactional(function () use ($id): ModerationCase {
             $case = $this->caseStore->findForUpdate($id) ?? throw ModerationCaseNotFound::withId($id);
-            $handler = $this->typeRegistry->get($case->getTypeKey());
-            $this->authorization->assertCanAccessType($handler);
+            $this->authorization->assertCanAccessType($this->typeRegistry->get($case->getTypeKey()));
+            if ($case->getStatus() === ModerationStatus::Rejected) {
+                throw CaseAlreadyDecided::withStatus($case->getStatus());
+            }
+            return $case;
+        });
+        if ($checked->getStatus() === ModerationStatus::Approved) {
+            return $checked;
+        }
 
+        $result = $this->typeRegistry->get($checked->getTypeKey())->approve($checked);
+
+        return $this->caseStore->transactional(function () use ($id, $reason, $result): ModerationCase {
+            $case = $this->caseStore->findForUpdate($id) ?? throw ModerationCaseNotFound::withId($id);
             if ($case->getStatus() === ModerationStatus::Approved) {
                 return $case;
             }
             if ($case->getStatus() !== ModerationStatus::Pending) {
                 throw CaseAlreadyDecided::withStatus($case->getStatus());
             }
-
-            $result = $handler->approve($case);
             $case->approve(
                 $this->actorProvider->requireActorIdentifier(),
                 $this->clock->now(),

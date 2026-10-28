@@ -1,6 +1,9 @@
 Devclaim:
   NeosModeration:
     types: {}
+    # More screens of the moderation app, next to the inbox, provided by other packages (README "Screens"):
+    # key: {label, uri (a JSON API of the collection contract), privilegeTarget}
+    screens: {}
 
 Neos:
   Flow:

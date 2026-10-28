@@ -60,7 +60,8 @@ final class ModerationCaseServiceTest extends TestCase
 
         self::assertSame($firstResult, $secondResult);
         self::assertSame(1, $this->handler->approvalCalls);
-        self::assertSame(2, $this->store->lockedReads);
+        // checked and recorded under a lock; the repeated approval only checks
+        self::assertSame(3, $this->store->lockedReads);
         self::assertSame(ModerationStatus::Approved, $this->case->getStatus());
         self::assertCount(2, $this->case->getAuditEntries());
         self::assertSame('Accepted', $this->case->getDecisionReason());
