@@ -39,6 +39,9 @@ A type whose cases are edited elsewhere (e.g. as content in Neos) needs neither:
 the links there (`CasePresentation::$links`, shown above the details while the case is pending, and with the decision
 afterwards) and its preview shows the current state. `CasePresentation::$decisionHints` (`approve`, `reject`) says in
 the confirmation what a decision does; next to the preview the app lists the presented fields as "Eingesendet".
+`CasePresentation::$editedAt` says when what the case created was last edited after the submission: the app then
+switches between the submission (`getPreviewData($case, true)`) and the current state, shows "Bearbeitet" in the
+history, and opens the submission first with `?view=submitted`.
 
 ## Registering a type
 
@@ -149,13 +152,16 @@ Devclaim:
                 privilegeTarget: 'NeosSvelte.Events:EventLibrary'
 ```
 
-`GET uri` answers `{title, filters, columns, items}`. `filters`: `{name, label, kind, options}` with kind `chips`,
-`select` or `period`; an item matches an option when its `filterValues[name]` is the option's value or a list
+`GET uri` answers `{title, filters, columns, items}`. `filters`: `{name, label, kind, options, default?}` with kind
+`chips`, `select` or `period`, `default` the value selected when the screen opens; an item matches an option when its `filterValues[name]` is the option's value or a list
 containing it. `columns`: `{key, label}` shown from an item's `values`. An item: `{id, title, subtitle, color,
 status: {value, label, tone: success|warning|neutral}, values, filterValues, date, searchText, preview: {uri, data} |
-null, details: [{label, value}], links: [{label, uri}]}`; the preview uses the protocol of the case previews
-(read only). The API needs the backend session: add its controller to the request patterns of the provider
-`Neos.Neos:Backend` (see `Configuration/Settings.yaml`). New request patterns apply to sessions logged in afterwards.
+null, details: [{label, value}], links: [{label, uri}], caseId?}`; the preview uses the protocol of the case previews
+(read only). An item with a `caseId` (it came from a moderation case) is shown as that case, as in the inbox, with
+its `details` as a section. The API needs the backend session: add its controller to the request patterns of the provider
+`Neos.Neos:Backend` (see `Configuration/Settings.yaml`). A session keeps the request patterns of its tokens, also
+through logging out and in again in the same browser (Flow reuses the token objects): after deploying a new pattern,
+destroy the sessions (`./flow session:destroyall`), else such users get "Ihre Anmeldung gilt hierfür nicht (mehr)".
 
 ## Transaction and idempotency contract
 

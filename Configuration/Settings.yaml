@@ -36,3 +36,12 @@ Neos:
         icon: 'fas fa-shield-alt'
         privilegeTarget: 'Devclaim.NeosModeration:Backend.Module'
         mainStylesheet: 'Lite'
+    Ui:
+      # "Moderation" in the top bar of the content module, with the number of open cases (Public/NeosUi/Toolbar.js)
+      resources:
+        javascript:
+          '@devclaim/neos-moderation':
+            resource: 'resource://Devclaim.NeosModeration/Public/NeosUi/Toolbar.js'
+        stylesheets:
+          '@devclaim/neos-moderation':
+            resource: 'resource://Devclaim.NeosModeration/Public/NeosUi/Toolbar.css'

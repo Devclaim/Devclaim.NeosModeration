@@ -23,8 +23,9 @@ export const dateTime = (iso: string) => DATE_TIME.format(new Date(iso));
 export const STATUS_LABELS = { pending: 'Offen', approved: 'Angenommen', rejected: 'Abgelehnt', all: 'Alle' } as const;
 
 export const EVENT_LABELS = {
-	submitted: 'Eingegangen',
+	submitted: 'Vorschlag eingegangen',
 	corrected: 'Korrigiert',
+	edited: 'Bearbeitet',
 	approved: 'Angenommen',
 	rejected: 'Abgelehnt'
 } as const;
@@ -43,6 +44,6 @@ export function apiErrorMessage(status: number, code: string): string {
 	if (status === 409) return 'Darüber wurde inzwischen schon entschieden.';
 	if (status === 403) return 'Dafür fehlt Ihnen die Berechtigung.';
 	if (status === 404) return 'Diesen Vorschlag gibt es nicht mehr.';
-	if (code === 'loggedOut') return 'Sie wurden abgemeldet.';
+	if (code === 'loggedOut') return 'Ihre Anmeldung gilt hierfür nicht (mehr). Bitte melden Sie sich ab und neu an.';
 	return 'Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.';
 }

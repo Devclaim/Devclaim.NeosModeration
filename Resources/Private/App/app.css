@@ -24,7 +24,8 @@
 	--success-soft: #183326;
 	--success-text: #7fd9a4;
 	--radius: 6px;
-	--topbar: 52px;
+	/* the height of the top bar of the Neos UI */
+	--topbar: 40px;
 	color-scheme: dark;
 }
 
@@ -87,21 +88,56 @@ a {
 	z-index: 20;
 	display: flex;
 	align-items: center;
-	gap: 10px;
 	height: var(--topbar);
-	padding: 0 8px 0 16px;
 	padding-top: env(safe-area-inset-top);
 	background: #222;
-	border-bottom: 1px solid var(--line);
+	border-bottom: 1px solid #3f3f3f;
 }
 
-.brand {
-	display: flex;
+/* like the menu button of the Neos UI: a square at the start, with a line */
+.topbar-back {
+	display: inline-flex;
+	flex: none;
 	align-items: center;
-	gap: 8px;
+	justify-content: center;
+	width: var(--topbar);
+	height: 100%;
+	border-right: 1px solid #3f3f3f;
 	color: var(--text-strong);
-	font-weight: 700;
+}
+
+.topbar-back:hover {
+	background: var(--accent);
+}
+
+.neos-logo {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 10px;
+	height: 100%;
+	padding-inline: 12px 14px;
+	color: var(--text-strong);
 	text-decoration: none;
+}
+
+.neos-logo-text {
+	font-size: 16px;
+	line-height: 1;
+	letter-spacing: 0.25em;
+}
+
+.topbar-title {
+	padding-left: 14px;
+	border-left: 1px solid #3f3f3f;
+	color: var(--muted);
+	font-size: 14px;
+	line-height: var(--topbar);
+	white-space: nowrap;
+}
+
+.topbar > .badge {
+	margin-left: 8px;
 }
 
 .topbar-end {
@@ -109,11 +145,24 @@ a {
 	align-items: center;
 	gap: 4px;
 	margin-left: auto;
+	padding-right: 4px;
 	min-width: 0;
 }
 
 .topbar-end form {
 	margin: 0;
+}
+
+.topbar .icon-button {
+	width: var(--topbar);
+	height: var(--topbar);
+}
+
+/* phones: the logo without its word, so the title and the user fit */
+@media (max-width: 520px) {
+	.neos-logo-text {
+		display: none;
+	}
 }
 
 .user {
@@ -267,7 +316,7 @@ a {
 .type-filter {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 8px;
 }
 
 .section-title {
@@ -468,6 +517,7 @@ a {
 .detail-body {
 	display: grid;
 	flex: 1;
+	grid-template-columns: minmax(0, 1fr);
 	align-content: start;
 }
 
@@ -479,22 +529,199 @@ a {
 	background: #202020;
 }
 
+/* one line, always: a long caption is cut, the switch keeps its place (the preview below never moves) */
+.preview-caption-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	min-height: 32px;
+}
+
+.preview-caption-row .segmented {
+	flex: none;
+}
+
 .preview-caption {
 	display: flex;
 	align-items: center;
 	gap: 6px;
+	min-width: 0;
 	margin: 0;
+	overflow: hidden;
 	color: var(--muted);
 	font-size: 13px;
+	white-space: nowrap;
+}
+
+.preview-caption > svg {
+	flex: none;
+}
+
+.preview-caption > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* phones: the switch above, the caption below in up to two lines; a fixed height, so the preview stays put */
+@media (max-width: 520px) {
+	.preview-caption-row {
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: flex-start;
+		gap: 8px;
+		height: 78px;
+	}
+
+	.preview-caption {
+		display: -webkit-box;
+		overflow: hidden;
+		white-space: normal;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	.preview-caption > svg {
+		display: inline;
+		margin-right: 6px;
+		vertical-align: -2px;
+	}
+
+	.preview-caption > span {
+		overflow: visible;
+	}
+
+	.preview-caption > span + span {
+		margin-left: 4px;
+	}
+}
+
+.caption-edited {
+	color: var(--orange-text);
+}
+
+.segmented-small {
+	padding: 2px;
+}
+
+.segmented-small button {
+	min-height: 28px;
+	padding: 0 10px;
+	font-size: 13px;
+}
+
+/* the preview: a light card that keeps its place while the page loads, then fades in and eases to its height */
+.preview {
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--radius);
+	background: #f3f1ec;
+	box-shadow: 0 12px 40px rgb(0 0 0 / 0.45);
+	transition: height 280ms ease;
 }
 
 .preview-frame {
 	display: block;
 	width: 100%;
 	border: 0;
-	border-radius: var(--radius);
 	background: #fff;
-	box-shadow: 0 12px 40px rgb(0 0 0 / 0.45);
+	opacity: 0;
+	transition: opacity 280ms ease;
+}
+
+.preview[data-shown] .preview-frame {
+	opacity: 1;
+}
+
+/* the loading line of the Neos UI: blue, moving along the edge of what loads; it takes no room */
+.loading-bar {
+	position: absolute;
+	inset-inline: 0;
+	z-index: 2;
+	height: 2px;
+	overflow: hidden;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 200ms ease;
+}
+
+.loading-bar-top {
+	top: 0;
+}
+
+.loading-bar-bottom {
+	bottom: -1px;
+}
+
+.loading-bar[data-active] {
+	opacity: 1;
+}
+
+.loading-bar::before {
+	content: '';
+	position: absolute;
+	inset-block: 0;
+	width: 40%;
+	background: linear-gradient(90deg, transparent, var(--accent), transparent);
+	animation: loading-slide 1.1s ease-in-out infinite;
+}
+
+@keyframes loading-slide {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(250%);
+	}
+}
+
+.list-header,
+.detail {
+	position: relative;
+}
+
+/* content fades in where it belongs, nothing moves */
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.cases > li,
+.detail-loaded {
+	animation: fade-in 220ms ease both;
+}
+
+
+/* the refresh button turns while a list loads */
+.icon-button[data-loading] svg {
+	animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.loading-bar::before,
+	.icon-button[data-loading] svg {
+		animation: none;
+	}
+
+	.cases > li,
+	.detail-loaded {
+		animation: none;
+	}
+
+	.preview,
+	.preview-frame {
+		transition: none;
+	}
 }
 
 .presentation {
@@ -512,6 +739,25 @@ a {
 	margin: 0;
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
+}
+
+/* below the preview: in columns where there is room, long values over the whole width */
+.facts {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 14px;
+	padding-top: 18px;
+	border-top: 1px solid var(--line);
+}
+
+.presentation-columns {
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: 14px 24px;
+}
+
+.presentation-columns .fact-wide {
+	grid-column: 1 / -1;
 }
 
 .detail-panel {
@@ -659,8 +905,39 @@ textarea.control {
 	background: #5fd0f7;
 }
 
-.history-corrected .history-dot {
+.history-corrected .history-dot,
+.history-edited .history-dot {
 	background: var(--orange-text);
+}
+
+/* an entry that shows its state in the preview (submission, current state) */
+.history-button {
+	display: flex;
+	flex-direction: column;
+	margin: -4px -8px;
+	padding: 4px 8px;
+	border: 0;
+	border-radius: var(--radius);
+	background: transparent;
+	text-align: start;
+	cursor: pointer;
+}
+
+.history-button:hover {
+	background: var(--surface-hover);
+}
+
+.history-button > span {
+	display: flex;
+	flex-direction: column;
+}
+
+.badge-shown {
+	margin-left: 8px;
+	background: var(--accent-soft);
+	color: var(--accent);
+	font-weight: 600;
+	vertical-align: middle;
 }
 
 .history-approved .history-dot {
@@ -796,10 +1073,14 @@ textarea.control {
 		height: calc(100dvh - var(--topbar));
 	}
 
-	.app[data-view] .filters,
+	/* all three again, each with its own layout ("revert" would make the filters a block without their gaps) */
+	.app[data-view] .filters {
+		display: flex;
+	}
+
 	.app[data-view] .list,
 	.app[data-view] .main {
-		display: revert;
+		display: block;
 	}
 
 	.filters {

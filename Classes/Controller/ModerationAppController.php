@@ -47,6 +47,10 @@ final class ModerationAppController extends ActionController
             'csrfToken' => $this->securityContext->getCsrfProtectionToken(),
             'user' => $user?->getLabel() ?? '',
             'backendUri' => '/neos',
+            // "back": the content module, for users who may open it (moderators who edit in Neos, editors)
+            'contentUri' => $this->privilegeManager->isPrivilegeTargetGranted('Neos.Neos.Ui:Backend.Module.Content')
+                ? '/neos/content'
+                : null,
             'logoutUri' => '/neos/logout',
             'screens' => $this->accessibleScreens(),
         ];

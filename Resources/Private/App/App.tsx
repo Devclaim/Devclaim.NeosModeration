@@ -4,9 +4,19 @@ import { CaseDetail } from './CaseDetail';
 import { CollectionScreen } from './CollectionScreen';
 import { ago, apiErrorMessage, STATUS_LABELS } from './format';
 import { Icon } from './Icon';
+import { LoadingBar } from './LoadingBar';
 
 type Filter = Status | 'all';
-type Location = { status: Filter; type: string; q: string; caseId: string | null; screen: string | null; item: string | null };
+type Location = {
+	status: Filter;
+	type: string;
+	q: string;
+	caseId: string | null;
+	screen: string | null;
+	item: string | null;
+	/** "submitted": the case shows its submission first */
+	view: string | null;
+};
 
 const FILTERS: Filter[] = ['pending', 'approved', 'rejected', 'all'];
 
@@ -20,7 +30,8 @@ function readLocation(): Location {
 		q: params.get('q') ?? '',
 		caseId: params.get('case'),
 		screen: params.get('screen'),
-		item: params.get('item')
+		item: params.get('item'),
+		view: params.get('view')
 	};
 }
 
@@ -32,6 +43,7 @@ function writeLocation(location: Location, replace: boolean) {
 	if (location.caseId) params.set('case', location.caseId);
 	if (location.screen) params.set('screen', location.screen);
 	if (location.item) params.set('item', location.item);
+	if (location.view) params.set('view', location.view);
 	const url = `${window.location.pathname}${params.size > 0 ? `?${params}` : ''}`;
 	window.history[replace ? 'replaceState' : 'pushState'](null, '', url);
 }
@@ -46,6 +58,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	const [listError, setListError] = useState<string | null>(null);
 	const [query, setQuery] = useState(location.q);
 	const [toast, setToast] = useState<string | null>(null);
+	const [loading, setLoading] = useState(false);
 
 	const navigate = useCallback((change: Partial<Location>, replace = false) => {
 		setLocation((previous) => {
@@ -62,13 +75,15 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	}, []);
 
 	const load = useCallback(() => {
+		setLoading(true);
 		api
 			.cases(location.status, location.type, location.q)
 			.then((loaded) => {
 				setList(loaded);
 				setListError(null);
 			})
-			.catch((error: unknown) => setListError(error instanceof ApiError ? apiErrorMessage(error.status, error.code) : 'Laden fehlgeschlagen.'));
+			.catch((error: unknown) => setListError(error instanceof ApiError ? apiErrorMessage(error.status, error.code) : 'Laden fehlgeschlagen.'))
+			.finally(() => setLoading(false));
 	}, [api, location.status, location.type, location.q]);
 
 	useEffect(load, [load]);
@@ -114,11 +129,16 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 
 	return (
 		<div className="app" data-view={showsDetail ? 'detail' : 'list'} data-tabs={configuration.screens.length > 0 || undefined}>
+			{/* like the top bar of the Neos UI: back to the backend, the logo, where we are */}
 			<header className="topbar">
-				<a className="brand" href="/neos/moderation">
-					<Icon name="shield" size={18} />
-					<span>Moderation</span>
+				<a className="topbar-back" href={configuration.contentUri ?? configuration.backendUri} title="Zurück zu Neos" aria-label="Zurück zu Neos">
+					<Icon name="back" size={18} />
 				</a>
+				<a className="neos-logo" href="/neos/moderation" aria-label="Moderation">
+					<NeosLogo />
+					<span className="neos-logo-text">NEOS</span>
+				</a>
+				<span className="topbar-title">Moderation</span>
 				{configuration.screens.length === 0 && (counts.pending ?? 0) > 0 && (
 					<span className="badge badge-pending" aria-label={`${counts.pending} offen`}>{counts.pending}</span>
 				)}
@@ -135,7 +155,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 
 			{configuration.screens.length > 0 && (
 				<nav className="tabs" aria-label="Bereiche">
-					<button type="button" aria-current={screen === null ? 'page' : undefined} onClick={() => navigate({ screen: null, item: null, caseId: null })}>
+					<button type="button" aria-current={screen === null ? 'page' : undefined} onClick={() => navigate({ screen: null, item: null, caseId: null, view: null })}>
 						Eingang
 						{(counts.pending ?? 0) > 0 && <span className="badge badge-pending">{counts.pending}</span>}
 					</button>
@@ -144,7 +164,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 							key={candidate.key}
 							type="button"
 							aria-current={screen?.key === candidate.key ? 'page' : undefined}
-							onClick={() => navigate({ screen: candidate.key, item: null, caseId: null })}
+							onClick={() => navigate({ screen: candidate.key, item: null, caseId: null, view: null })}
 						>
 							{candidate.label}
 						</button>
@@ -154,7 +174,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 
 			<div className="layout">
 				{screen ? (
-					<CollectionScreen key={screen.key} api={api} screen={screen} itemId={location.item} onSelect={(item) => navigate({ item })} />
+					<CollectionScreen key={screen.key} api={api} screen={screen} itemId={location.item} onSelect={(item) => navigate({ item })} onToast={setToast} />
 				) : (
 				<>
 				<nav className="filters" aria-label="Filter">
@@ -173,7 +193,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 								onClick={() => navigate({ status: filter, caseId: null })}
 							>
 								<span>{STATUS_LABELS[filter]}</span>
-								<span className="filter-count">{countOf(filter)}</span>
+								<span className="filter-count">{list ? countOf(filter) : ''}</span>
 							</button>
 						))}
 					</div>
@@ -195,11 +215,12 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 				<section className="list" aria-label="Fälle" aria-busy={list === null}>
 					<div className="list-header">
 						<h1>
-							{STATUS_LABELS[location.status]} <span className="muted">· {list?.cases.length ?? '…'}</span>
+							{STATUS_LABELS[location.status]} <span className="muted">{list ? `· ${list.cases.length}` : ''}</span>
 						</h1>
-						<button type="button" className="icon-button" onClick={load} aria-label="Neu laden" title="Neu laden">
+						<button type="button" className="icon-button" onClick={load} aria-label="Neu laden" title="Neu laden" data-loading={loading || undefined}>
 							<Icon name="refresh" />
 						</button>
+						<LoadingBar active={loading} edge="bottom" />
 					</div>
 					{listError && <p className="list-message" role="alert">{listError}</p>}
 					{list && list.cases.length === 0 && (
@@ -215,7 +236,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 									type="button"
 									className="case"
 									aria-current={item.id === location.caseId ? 'true' : undefined}
-									onClick={() => navigate({ caseId: item.id })}
+									onClick={() => navigate({ caseId: item.id, view: null })}
 								>
 									<span className="case-title">{item.title}</span>
 									<span className="case-summary">{item.summary || item.typeLabel}</span>
@@ -234,6 +255,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 					{location.caseId ? (
 						<CaseDetail
 							key={location.caseId}
+							initialView={location.view === 'submitted' ? 'submitted' : 'corrected'}
 							api={api}
 							caseId={location.caseId}
 							onBack={() => navigate({ caseId: null })}
@@ -255,6 +277,16 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 				{toast}
 			</div>
 		</div>
+	);
+}
+
+/** the mark of Neos (Neos.Neos Images/Login/Logo.svg), its dark part white as on the dark bar of the Neos UI */
+function NeosLogo() {
+	return (
+		<svg viewBox="40 34 120 132" width="22" height="24" aria-hidden="true" focusable="false">
+			<path fill="#fff" d="M132.984 37.5l-20.642 15.162v31.716l20.642 29.413M132.984 150.564L53.627 37.5l-9.193 6.773V162.5l20.642-15.162V88.79l51.619 73.71h22.58l16.291-11.936" />
+			<path fill="#00ADEE" d="M65.076 88.79v58.548L44.434 162.5h22.582l20.642-15.162v-26.3M132.984 113.791V37.5h22.582v113.064h-22.582L53.627 37.5h25.809" />
+		</svg>
 	);
 }
 

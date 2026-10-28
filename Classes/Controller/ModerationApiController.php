@@ -20,6 +20,7 @@ use Devclaim\NeosModeration\Domain\ValueObject\ModerationCaseId;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Security\Context as SecurityContext;
+use Neos\Neos\Domain\Service\UserService;
 
 /**
  * The JSON API of the moderation app (ModerationAppController), with the Neos backend session: the cases of the
@@ -40,6 +41,7 @@ final class ModerationApiController extends ActionController
     public function __construct(
         private readonly ModerationCaseService $moderationCaseService,
         private readonly SecurityContext $securityContext,
+        private readonly UserService $userService,
     ) {
     }
 
@@ -223,6 +225,11 @@ final class ModerationApiController extends ActionController
             ),
             'links' => $presentation->links,
             'decisionHints' => (object)$presentation->decisionHints,
+            'editedAt' => $presentation->editedAt?->format(DATE_ATOM),
+            'edits' => array_map(
+                static fn(array $edit): array => ['by' => $edit['by'], 'at' => $edit['at']->format(DATE_ATOM)],
+                $presentation->edits,
+            ),
             'privateMetadata' => $this->moderationCaseService->canViewPrivateMetadata($case)
                 ? $case->getPrivateMetadata()
                 : null,
@@ -237,17 +244,28 @@ final class ModerationApiController extends ActionController
                 ]
                 : null,
             'decision' => [
-                'moderator' => $case->getModeratorIdentifier(),
+                'moderator' => $this->actorLabel($case->getModeratorIdentifier()),
                 'reason' => $case->getDecisionReason(),
                 'externalReference' => $case->getExternalReference(),
             ],
-            'audit' => array_map(static fn(ModerationAuditEntry $entry): array => [
+            'audit' => array_map(fn(ModerationAuditEntry $entry): array => [
                 'event' => $entry->getEvent()->value,
-                'actor' => $entry->getActorIdentifier(),
+                'actor' => $this->actorLabel($entry->getActorIdentifier()),
                 'recordedAt' => $entry->getRecordedAt()->format(DATE_ATOM),
                 'context' => $entry->getContext(),
             ], $case->getAuditEntries()),
         ];
+    }
+
+    /** the name of a Neos user for the account identifier the audit keeps (the identifier if there is no such user) */
+    private function actorLabel(?string $accountIdentifier): ?string
+    {
+        if ($accountIdentifier === null || $accountIdentifier === '') {
+            return $accountIdentifier;
+        }
+        $label = $this->userService->getUser($accountIdentifier)?->getLabel();
+
+        return $label !== null && $label !== '' ? $label : $accountIdentifier;
     }
 
     /** @param array<string, mixed> $data */

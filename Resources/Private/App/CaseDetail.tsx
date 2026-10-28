@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Api, ApiError, type CaseDetail as Detail } from './api';
 import { Fields } from './Fields';
+import { Facts } from './Facts';
 import { Preview } from './Preview';
 import { apiErrorMessage, dateTime, EVENT_LABELS, STATUS_LABELS } from './format';
 import { Icon } from './Icon';
+import { LoadingBar } from './LoadingBar';
 
-type View = 'corrected' | 'submitted';
+export type View = 'corrected' | 'submitted';
+type HistoryEntry = { event: keyof typeof EVENT_LABELS; actor: string | null; recordedAt: string; context: Record<string, unknown> };
 
 /**
  * One case: the preview as the website shows it, the correctable fields (or what was submitted), where it is edited
@@ -17,10 +20,16 @@ export function CaseDetail({
 	caseId,
 	onBack,
 	onChange,
-	onToast
+	onToast,
+	initialView = 'corrected',
+	extraDetails
 }: {
 	api: Api;
 	caseId: string;
+	/** "submitted": the submission first (e.g. from "Ursprünglichen Vorschlag ansehen") */
+	initialView?: View;
+	/** what a screen knows about what the case created (e.g. the next dates of the event), shown as a section */
+	extraDetails?: { title: string; details: { label: string; value: string }[] };
 	onBack: () => void;
 	/** the case changed (corrected, decided): the list shows it */
 	onChange: (detail: Detail) => void;
@@ -28,7 +37,7 @@ export function CaseDetail({
 }) {
 	const [detail, setDetail] = useState<Detail | null>(null);
 	const [loadError, setLoadError] = useState<string | null>(null);
-	const [view, setView] = useState<View>('corrected');
+	const [view, setView] = useState<View>(initialView);
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [saving, setSaving] = useState(false);
 	const [decision, setDecision] = useState<'approve' | 'reject' | null>(null);
@@ -41,7 +50,7 @@ export function CaseDetail({
 		let cancelled = false;
 		setDetail(null);
 		setLoadError(null);
-		setView('corrected');
+		setView(initialView);
 		setFieldErrors({});
 		api
 			.case(caseId)
@@ -50,7 +59,7 @@ export function CaseDetail({
 		return () => {
 			cancelled = true;
 		};
-	}, [api, caseId]);
+	}, [api, caseId, initialView]);
 
 	const correct = useCallback(
 		(field: string, value: string) => {
@@ -91,7 +100,11 @@ export function CaseDetail({
 		);
 	}
 	if (!detail) {
-		return <div className="detail detail-empty" aria-busy="true"><p className="muted">Wird geladen …</p></div>;
+		return (
+			<div className="detail" aria-busy="true" aria-label="Wird geladen">
+				<LoadingBar active />
+			</div>
+		);
 	}
 
 	const pending = detail.status === 'pending';
@@ -99,9 +112,43 @@ export function CaseDetail({
 	const canCorrect = pending && detail.correctable.length > 0;
 	const values = submittedView ? detail.payload : detail.effective;
 	const contact = detail.privateMetadata;
+	// edited after the submission (e.g. in Neos): the submission and the current state, side by side in the history too
+	const edited = detail.editedAt !== null && detail.preview !== null;
+	// one entry per editor with their last change; the latest one shows the current state
+	const edits = detail.edits.length > 0 ? detail.edits : detail.editedAt ? [{ by: '', at: detail.editedAt }] : [];
+	const switchable = canCorrect || detail.corrections > 0 || edited;
+	const caption = saving
+		? 'wird gespeichert …'
+		: submittedView
+			? 'unverändert'
+			: edited && detail.editedAt
+				? `bearbeitet, zuletzt ${dateTime(detail.editedAt)}`
+				: canCorrect
+					? 'Titel und Text hier bearbeiten'
+					: '';
+	const viewSwitch = (
+		<div className="segmented segmented-small" role="group" aria-label="Ansicht">
+			<button type="button" aria-pressed={submittedView} onClick={() => setView('submitted')}>
+				Einsendung
+			</button>
+			<button type="button" aria-pressed={!submittedView} onClick={() => setView('corrected')}>
+				{edited ? 'Aktuell' : detail.corrections > 0 ? `Mit Korrekturen (${detail.corrections})` : 'Mit Korrekturen'}
+			</button>
+		</div>
+	);
+	// who: the sender of the submission (with the contact privilege: their name), the editor, the moderator
+	const sender = typeof contact?.name === 'string' && contact.name.trim() !== '' ? `von ${contact.name.trim()}` : '';
+	const historyActor = (entry: HistoryEntry): string =>
+		entry.event === 'submitted' ? sender : entry.event === 'edited' ? (entry.actor ?? 'zuletzt') : (entry.actor ?? '');
+	const history: HistoryEntry[] = [
+		...detail.audit,
+		...(edited
+			? edits.map((edit, index) => ({ event: 'edited' as const, actor: edit.by || null, recordedAt: edit.at, context: { latest: index === 0 } }))
+			: [])
+	].sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime());
 
 	return (
-		<article className="detail" aria-labelledby="detail-title">
+		<article className="detail detail-loaded" aria-labelledby="detail-title">
 			<header className="detail-header">
 				<button type="button" className="back-button" onClick={onBack}>
 					<Icon name="back" />
@@ -114,35 +161,22 @@ export function CaseDetail({
 				<span className={`status status-${detail.status}`}>{STATUS_LABELS[detail.status]}</span>
 			</header>
 
-			{(canCorrect || detail.corrections > 0) && (
-				<div className="detail-toolbar">
-					<div className="segmented" role="group" aria-label="Ansicht">
-						<button type="button" aria-pressed={submittedView} onClick={() => setView('submitted')}>
-							Einsendung
-						</button>
-						<button type="button" aria-pressed={!submittedView} onClick={() => setView('corrected')}>
-							{detail.corrections > 0 ? `Mit Korrekturen (${detail.corrections})` : 'Mit Korrekturen'}
-						</button>
-					</div>
-					<p className="hint" aria-live="polite">
-						{saving
-							? 'Wird gespeichert …'
-							: submittedView
-								? 'So wurde der Vorschlag eingesendet. Er bleibt unverändert.'
-								: canCorrect
-									? 'Titel und Text direkt in der Vorschau bearbeiten.'
-									: ''}
-					</p>
-				</div>
-			)}
+			{/* without a preview the switch has its own row; with one it sits in the line above the preview */}
+			{switchable && !detail.preview && <div className="detail-toolbar">{viewSwitch}</div>}
 
 			<div className="detail-body">
 				<div className="detail-preview">
 					{detail.preview ? (
 						<>
-							<p className="preview-caption">
-								<Icon name="eye" /> So erscheint es auf der Website
-							</p>
+							{/* always this one line, with or without the switch: the preview below stays where it is */}
+							<div className="preview-caption-row">
+								<p className="preview-caption" aria-live="polite">
+									<Icon name="eye" />
+									<span>{submittedView ? 'So wurde es eingesendet' : 'So erscheint es auf der Website'}</span>
+									{caption && <span className={edited && !submittedView ? 'caption-note caption-edited' : 'caption-note'}>· {caption}</span>}
+								</p>
+								{switchable && viewSwitch}
+							</div>
 							<Preview
 								uri={detail.preview.uri}
 								data={submittedView ? detail.preview.submitted : detail.preview.data}
@@ -155,6 +189,9 @@ export function CaseDetail({
 									{fieldErrors.title ? 'Der Titel darf nicht leer sein.' : 'Der Text ist so nicht erlaubt oder leer.'}
 								</p>
 							)}
+							{/* below the preview: what was sent (the type may have changed it since), what the case created */}
+							{detail.correctable.length === 0 && <Facts title="Eingesendet" facts={detail.fields} />}
+							{extraDetails && <Facts title={extraDetails.title} facts={extraDetails.details} />}
 						</>
 					) : (
 						<dl className="presentation">
@@ -218,19 +255,6 @@ export function CaseDetail({
 							readOnly={!canCorrect || submittedView}
 							onCommit={correct}
 						/>
-					) : detail.preview ? (
-						// what was sent, next to the preview of the current state (the type may have changed it since)
-						<section className="panel-section">
-							<h3 className="section-title">Eingesendet</h3>
-							<dl className="presentation">
-								{detail.fields.map((field) => (
-									<div key={field.label}>
-										<dt>{field.label}</dt>
-										<dd>{field.value || '—'}</dd>
-									</div>
-								))}
-							</dl>
-						</section>
 					) : null}
 
 					{contact && (
@@ -256,22 +280,42 @@ export function CaseDetail({
 					<section className="panel-section">
 						<h3 className="section-title">Verlauf</h3>
 						<ol className="history">
-							{[...detail.audit].reverse().map((entry, index) => (
-								<li key={index} className={`history-${entry.event}`}>
-									<span className="history-dot" aria-hidden="true" />
+							{history.map((entry, index) => {
+								// with an edited case: the submission and the current state can be shown from here
+								const shows: View | null = !edited
+									? null
+									: entry.event === 'submitted'
+										? 'submitted'
+										: entry.event === 'edited' && entry.context.latest === true
+											? 'corrected'
+											: null;
+								const content = (
 									<span>
 										<span className="history-event">
 											{EVENT_LABELS[entry.event]}
 											{entry.event === 'corrected' && typeof entry.context.fields === 'string' && (
 												<span className="muted"> · {fieldLabels(detail, entry.context.fields)}</span>
 											)}
+											{shows && view === shows && <span className="badge badge-shown">angezeigt</span>}
 										</span>
 										<span className="muted history-meta">
-											{entry.actor ?? 'über die Website'} · {dateTime(entry.recordedAt)}
+											{[historyActor(entry), dateTime(entry.recordedAt)].filter(Boolean).join(' · ')}
 										</span>
 									</span>
-								</li>
-							))}
+								);
+								return (
+									<li key={index} className={`history-${entry.event}`}>
+										<span className="history-dot" aria-hidden="true" />
+										{shows ? (
+											<button type="button" className="history-button" onClick={() => setView(shows)} aria-pressed={view === shows}>
+												{content}
+											</button>
+										) : (
+											content
+										)}
+									</li>
+								);
+							})}
 						</ol>
 					</section>
 				</aside>
