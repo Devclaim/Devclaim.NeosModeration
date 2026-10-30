@@ -186,6 +186,45 @@ final class ModerationCaseServiceTest extends TestCase
         self::assertTrue($this->service->canViewPrivateMetadata($this->case));
     }
 
+    public function testDeletingAPendingCaseUndoesItLikeARejectionAndRemovesIt(): void
+    {
+        $this->service->delete($this->case->getId());
+
+        self::assertSame(['rejected'], $this->handler->hooks);
+        self::assertNull($this->store->find($this->case->getId()));
+        self::assertSame([], $this->service->list(null));
+    }
+
+    public function testDeletingADecidedCaseLeavesWhatItsDecisionCreated(): void
+    {
+        $this->service->approve($this->case->getId());
+        $this->service->delete($this->case->getId());
+
+        self::assertSame(['approved'], $this->handler->hooks);
+        self::assertNull($this->store->find($this->case->getId()));
+    }
+
+    public function testDeletingADeletedCaseDoesNothing(): void
+    {
+        $this->service->delete($this->case->getId());
+        $this->service->delete($this->case->getId());
+
+        self::assertSame(['rejected'], $this->handler->hooks);
+    }
+
+    public function testApplicationLayerDeniesDeletingCasesOfAnUnauthorizedType(): void
+    {
+        $this->authorization->allowed = false;
+
+        try {
+            $this->service->delete($this->case->getId());
+            self::fail('A case of a type the user may not moderate must not be deleted.');
+        } catch (AccessDenied) {
+            self::assertSame([], $this->handler->hooks);
+            self::assertNotNull($this->store->find($this->case->getId()));
+        }
+    }
+
     private function registry(TestTypeHandler $handler): ModerationTypeRegistry
     {
         $objectManager = $this->createMock(ObjectManagerInterface::class);

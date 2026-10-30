@@ -85,7 +85,7 @@ class ModerationCase
     #[ORM\OneToMany(
         mappedBy: 'moderationCase',
         targetEntity: ModerationAuditEntry::class,
-        cascade: ['persist'],
+        cascade: ['persist', 'remove'],
         fetch: 'EAGER',
     )]
     #[ORM\OrderBy(['recordedAt' => 'ASC'])]

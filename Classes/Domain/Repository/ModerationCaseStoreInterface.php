@@ -21,6 +21,9 @@ interface ModerationCaseStoreInterface
     /** Schedules a changed case for writing; persistence may track changes explicitly only. */
     public function update(ModerationCase $case): void;
 
+    /** Removes a case with its audit entries */
+    public function remove(ModerationCase $case): void;
+
     public function find(ModerationCaseId $id): ?ModerationCase;
 
     public function findForUpdate(ModerationCaseId $id): ?ModerationCase;

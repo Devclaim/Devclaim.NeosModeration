@@ -24,8 +24,8 @@ use Neos\Neos\Domain\Service\UserService;
 
 /**
  * The JSON API of the moderation app (ModerationAppController), with the Neos backend session: the cases of the
- * types the user may moderate, a case with its presentation, corrections and preview, and the decisions. Every action
- * goes through ModerationCaseService, which checks the type privilege; POST requests need the CSRF token
+ * types the user may moderate, a case with its presentation, corrections and preview, the decisions and deleting
+ * cases. Every action goes through ModerationCaseService, which checks the type privilege; POST requests need the CSRF token
  * (header X-Flow-Csrftoken).
  *
  * Errors: 404 no such case, 403 not allowed, 409 already decided, 422 {"errors": {field: code}}, 400 a bad request.
@@ -37,6 +37,9 @@ final class ModerationApiController extends ActionController
 
     /** the most a request body may have */
     private const MAX_BODY_BYTES = 200_000;
+
+    /** the most cases one delete request may name (a page of the list) */
+    private const MAX_DELETE_IDS = 250;
 
     public function __construct(
         private readonly ModerationCaseService $moderationCaseService,
@@ -130,6 +133,42 @@ final class ModerationApiController extends ActionController
             ModerationCaseId::fromString($caseId),
             $this->reason(),
         )), post: true);
+    }
+
+    /**
+     * POST cases/delete {"ids": [caseId, …]}: deletes the cases completely (pending ones are undone like a
+     * rejection first). Answers {"deleted": [caseId, …], "failed": {caseId: error}, "counts": {…}}; a case that is
+     * gone already counts as deleted.
+     */
+    public function deleteAction(): string
+    {
+        return $this->respond(function (): array {
+            $ids = $this->body()['ids'] ?? null;
+            if (!is_array($ids) || $ids === [] || count($ids) > self::MAX_DELETE_IDS || !array_is_list($ids)) {
+                throw new \InvalidArgumentException('ids must be a list of 1 to ' . self::MAX_DELETE_IDS . ' case ids');
+            }
+            $deleted = [];
+            $failed = [];
+            foreach (array_unique(array_map(static fn(mixed $id): string => is_string($id) ? $id : '', $ids)) as $id) {
+                try {
+                    $this->moderationCaseService->delete(ModerationCaseId::fromString($id));
+                    $deleted[] = $id;
+                } catch (AccessDenied) {
+                    $failed[$id] = 'accessDenied';
+                } catch (CaseAlreadyDecided) {
+                    $failed[$id] = 'alreadyDecided';
+                } catch (UnknownModerationType) {
+                    $failed[$id] = 'notFound';
+                } catch (\InvalidArgumentException) {
+                    $failed[$id] = 'badRequest';
+                }
+            }
+            return [
+                'deleted' => $deleted,
+                'failed' => (object)$failed,
+                'counts' => $this->moderationCaseService->counts(),
+            ];
+        }, post: true);
     }
 
     /** @param callable(): array<string, mixed> $action */

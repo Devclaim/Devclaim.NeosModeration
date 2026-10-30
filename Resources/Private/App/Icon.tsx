@@ -10,7 +10,8 @@ const PATHS = {
 	shield: 'M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7zM9 12l2 2 4-4',
 	logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',
 	inbox: 'M3 13h5l2 3h4l2-3h5M5 5h14l2 8v6H3v-6z',
-	refresh: 'M20 11a8 8 0 10-2.3 5.7M20 4v7h-7'
+	refresh: 'M20 11a8 8 0 10-2.3 5.7M20 4v7h-7',
+	trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6'
 } as const;
 
 export function Icon({ name, size = 16 }: { name: keyof typeof PATHS; size?: number }) {

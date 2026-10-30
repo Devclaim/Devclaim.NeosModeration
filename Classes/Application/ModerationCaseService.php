@@ -194,4 +194,41 @@ final class ModerationCaseService
             return $case;
         });
     }
+
+    /**
+     * Deletes a case completely: the submission, the private metadata and the audit trail. A pending case is undone
+     * first like a rejection (the type's {@see RejectionHandlerInterface}, outside of a transaction), so nothing it
+     * prepared stays behind; a decided case leaves what its decision created (e.g. the published content of an
+     * approval). Deleting a case that is gone already does nothing, so a repeated delete is no error.
+     */
+    public function delete(ModerationCaseId $id): void
+    {
+        $checked = $this->caseStore->transactional(function () use ($id): ?ModerationCase {
+            $case = $this->caseStore->findForUpdate($id);
+            if ($case !== null) {
+                $this->authorization->assertCanAccessType($this->typeRegistry->get($case->getTypeKey()));
+            }
+            return $case;
+        });
+        if ($checked === null) {
+            return;
+        }
+
+        $handler = $this->typeRegistry->get($checked->getTypeKey());
+        if ($checked->getStatus() === ModerationStatus::Pending && $handler instanceof RejectionHandlerInterface) {
+            $handler->reject($checked, null);
+        }
+
+        $this->caseStore->transactional(function () use ($id, $checked): void {
+            $case = $this->caseStore->findForUpdate($id);
+            if ($case === null) {
+                return;
+            }
+            // approved in the meantime: its decision stands, the moderator can delete it again knowing that
+            if ($checked->getStatus() === ModerationStatus::Pending && $case->getStatus() === ModerationStatus::Approved) {
+                throw CaseAlreadyDecided::withStatus($case->getStatus());
+            }
+            $this->caseStore->remove($case);
+        });
+    }
 }

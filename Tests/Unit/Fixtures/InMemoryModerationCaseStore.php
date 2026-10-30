@@ -40,6 +40,11 @@ final class InMemoryModerationCaseStore implements ModerationCaseStoreInterface
         $this->cases[$case->getId()->value] = $case;
     }
 
+    public function remove(ModerationCase $case): void
+    {
+        unset($this->cases[$case->getId()->value]);
+    }
+
     public function find(ModerationCaseId $id): ?ModerationCase
     {
         return $this->cases[$id->value] ?? null;

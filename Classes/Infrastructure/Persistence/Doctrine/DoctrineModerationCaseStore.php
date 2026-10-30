@@ -36,6 +36,12 @@ final class DoctrineModerationCaseStore implements ModerationCaseStoreInterface
         $this->entityManager->persist($case);
     }
 
+    public function remove(ModerationCase $case): void
+    {
+        // the audit entries go with it (cascade remove; the foreign key also cascades)
+        $this->entityManager->remove($case);
+    }
+
     public function find(ModerationCaseId $id): ?ModerationCase
     {
         return $this->entityManager->find(ModerationCase::class, $id->value);

@@ -105,6 +105,13 @@ export type CaseList = {
 	types: { key: string; label: string }[];
 };
 
+/** the answer of deleting cases: which are gone, which not (and why) */
+export type DeleteResult = {
+	deleted: string[];
+	failed: Record<string, string>;
+	counts: Partial<Record<Status, number>>;
+};
+
 /** an answer of the API that is not a success: its status and, for 422, the errors per field */
 export class ApiError extends Error {
 	constructor(
@@ -182,7 +189,9 @@ export function createApi(configuration: Configuration) {
 		correct: (id: string, corrections: Record<string, unknown>) =>
 			post<CaseDetail>(`/cases/${encodeURIComponent(id)}/corrections`, { corrections }),
 		approve: (id: string, reason: string) => post<CaseDetail>(`/cases/${encodeURIComponent(id)}/approve`, { reason }),
-		reject: (id: string, reason: string) => post<CaseDetail>(`/cases/${encodeURIComponent(id)}/reject`, { reason })
+		reject: (id: string, reason: string) => post<CaseDetail>(`/cases/${encodeURIComponent(id)}/reject`, { reason }),
+		/** completely, with the history; pending cases are discarded like a rejection */
+		remove: (ids: string[]) => post<DeleteResult>('/cases/delete', { ids })
 	};
 }
 

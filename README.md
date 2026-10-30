@@ -15,7 +15,7 @@ the app after logging in (`Neos.Neos.moduleConfiguration.preferredStartModules`)
 module but not publish to live land there too (`ModeratorStartAspect`).
 
 The app talks to a JSON API with the session and its CSRF token (`ModerationApiController`, `/neos/moderation/api/…`):
-the cases with counts per status, a case, its corrections, approval and rejection. Pages of the same origin outside of
+the cases with counts per status, a case, its corrections, approval, rejection and deletion. Pages of the same origin outside of
 the app (e.g. a bar in the Neos UI next to the content a case created) get the token from `GET …/api/session`
 (`{"csrfToken": …, "moderates": true|false}`) and use the same API.
 
@@ -178,6 +178,16 @@ A type that prepares something as soon as a case arrives (e.g. the content moder
 deciding) implements `SubmissionAwareTypeHandlerInterface`: `submitted()` runs after the case is stored, outside of
 the transaction. A failure there does not undo the submission; it is logged (`Neos.Flow:SystemLogger`), and the
 handler catches up when the case is decided.
+
+## Deleting cases
+
+Moderators select cases in the list (or open one) and delete them completely: the submission, the private metadata
+and the audit trail (`ModerationCaseService::delete()`, `POST …/api/cases/delete {"ids": […]}`, up to 250 at once).
+There is no automatic retention period; deleting is how a project removes old or unwanted submissions. A pending case
+is undone first like a rejection (`reject()` of a `RejectionHandlerInterface`, with the same idempotency contract), so
+nothing the type prepared stays behind; a decided case leaves what its decision created, e.g. the published content of
+an approval, which then has no case anymore. Deleting needs the same type privilege as deciding. A case that is gone
+already counts as deleted; one approved while it was being deleted stays (`alreadyDecided`).
 
 Only trusted application code should call `SubmitModerationCase`. Public endpoints remain the responsibility of the
 project and must authenticate the caller, rate-limit it, verify spam protection, and sanitize inputs before invoking

@@ -21,6 +21,7 @@ export function CaseDetail({
 	onBack,
 	onChange,
 	onToast,
+	onDelete,
 	initialView = 'corrected',
 	extraDetails
 }: {
@@ -34,6 +35,8 @@ export function CaseDetail({
 	/** the case changed (corrected, decided): the list shows it */
 	onChange: (detail: Detail) => void;
 	onToast: (message: string) => void;
+	/** deleting the case (confirmed by the caller); without it the case has no delete button */
+	onDelete?: (detail: Detail) => void;
 }) {
 	const [detail, setDetail] = useState<Detail | null>(null);
 	const [loadError, setLoadError] = useState<string | null>(null);
@@ -322,6 +325,14 @@ export function CaseDetail({
 							})}
 						</ol>
 					</section>
+
+					{onDelete && (
+						<section className="panel-section case-delete">
+							<button type="button" className="button button-danger" onClick={() => onDelete(detail)}>
+								<Icon name="trash" /> Fall löschen
+							</button>
+						</section>
+					)}
 				</aside>
 			</div>
 

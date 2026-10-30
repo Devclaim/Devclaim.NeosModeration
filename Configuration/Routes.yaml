@@ -29,6 +29,16 @@
     '@action': 'cases'
     '@format': 'json'
 -
+  # before "a case": cases/delete is not a case id
+  name: 'Moderation API: delete cases'
+  uriPattern: 'neos/moderation/api/cases/delete'
+  httpMethods: ['POST']
+  defaults:
+    '@package': 'Devclaim.NeosModeration'
+    '@controller': 'ModerationApi'
+    '@action': 'delete'
+    '@format': 'json'
+-
   name: 'Moderation API: a case'
   uriPattern: 'neos/moderation/api/cases/{caseId}'
   httpMethods: ['GET']

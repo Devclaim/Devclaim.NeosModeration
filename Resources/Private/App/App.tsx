@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type Api, ApiError, type CaseDetail as Detail, type CaseList, type Configuration, type Status } from './api';
 import { CaseDetail } from './CaseDetail';
 import { CollectionScreen } from './CollectionScreen';
+import { DeleteDialog } from './DeleteDialog';
 import { ago, apiErrorMessage, STATUS_LABELS } from './format';
 import { Icon } from './Icon';
 import { LoadingBar } from './LoadingBar';
@@ -59,6 +60,9 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	const [query, setQuery] = useState(location.q);
 	const [toast, setToast] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
+	// the cases selected in the list, for deleting several at once
+	const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+	const [deleting, setDeleting] = useState<{ ids: string[]; pending: number } | null>(null);
 
 	const navigate = useCallback((change: Partial<Location>, replace = false) => {
 		setLocation((previous) => {
@@ -87,6 +91,42 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	}, [api, location.status, location.type, location.q]);
 
 	useEffect(load, [load]);
+
+	// only what the list shows stays selected (another filter, a case gone)
+	useEffect(() => {
+		setSelected((previous) => {
+			const shown = new Set(list?.cases.map((item) => item.id));
+			const kept = [...previous].filter((id) => shown.has(id));
+			return kept.length === previous.size ? previous : new Set(kept);
+		});
+	}, [list]);
+
+	const toggle = (id: string) =>
+		setSelected((previous) => {
+			const next = new Set(previous);
+			if (!next.delete(id)) next.add(id);
+			return next;
+		});
+
+	const remove = useCallback(
+		async (ids: string[]) => {
+			try {
+				const result = await api.remove(ids);
+				const gone = new Set(result.deleted);
+				setList((previous) => previous && { ...previous, counts: result.counts, cases: previous.cases.filter((item) => !gone.has(item.id)) });
+				setSelected(new Set());
+				if (location.caseId && gone.has(location.caseId)) navigate({ caseId: null, view: null }, true);
+				const failed = Object.keys(result.failed).length;
+				const deleted = result.deleted.length === 1 ? 'Fall gelöscht.' : `${result.deleted.length} Fälle gelöscht.`;
+				setToast(failed === 0 ? deleted : `${deleted} ${failed === 1 ? 'Einer ließ' : `${failed} ließen`} sich nicht löschen.`);
+			} catch (error) {
+				setToast(error instanceof ApiError ? apiErrorMessage(error.status, error.code) : 'Das hat nicht geklappt.');
+			}
+			setDeleting(null);
+			load();
+		},
+		[api, load, location.caseId, navigate]
+	);
 
 	// new requests arrive while the app is open: fresh when it comes back into view
 	useEffect(() => {
@@ -126,6 +166,9 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	const countOf = (filter: Filter) => (filter === 'all' ? total : (counts[filter] ?? 0));
 	const screen = configuration.screens.find((candidate) => candidate.key === location.screen) ?? null;
 	const showsDetail = screen ? location.item !== null : location.caseId !== null;
+	const allSelected = (list?.cases.length ?? 0) > 0 && selected.size === list?.cases.length;
+	const pendingOf = (ids: string[]) => ids.filter((id) => list?.cases.find((item) => item.id === id)?.status === 'pending').length;
+	const deleteSelected = () => setDeleting({ ids: [...selected], pending: pendingOf([...selected]) });
 
 	return (
 		<div className="app" data-view={showsDetail ? 'detail' : 'list'} data-tabs={configuration.screens.length > 0 || undefined}>
@@ -222,6 +265,26 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 						</button>
 						<LoadingBar active={loading} edge="bottom" />
 					</div>
+					{list && list.cases.length > 0 && (
+						<div className="selection-bar" data-active={selected.size > 0 || undefined}>
+							<label className="case-select">
+								<input
+									type="checkbox"
+									checked={allSelected}
+									ref={(input) => {
+										if (input) input.indeterminate = selected.size > 0 && !allSelected;
+									}}
+									onChange={() => setSelected(allSelected ? new Set() : new Set(list.cases.map((item) => item.id)))}
+								/>
+								<span>{selected.size > 0 ? `${selected.size} ausgewählt` : 'Alle auswählen'}</span>
+							</label>
+							{selected.size > 0 && (
+								<button type="button" className="button button-danger" onClick={deleteSelected}>
+									<Icon name="trash" /> Löschen
+								</button>
+							)}
+						</div>
+					)}
 					{listError && <p className="list-message" role="alert">{listError}</p>}
 					{list && list.cases.length === 0 && (
 						<div className="list-message">
@@ -231,7 +294,11 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 					)}
 					<ul className="cases">
 						{list?.cases.map((item) => (
-							<li key={item.id}>
+							<li key={item.id} className="case-row" data-selected={selected.has(item.id) || undefined}>
+								<label className="case-select">
+									<input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
+									<span className="visually-hidden">{item.title} auswählen</span>
+								</label>
 								<button
 									type="button"
 									className="case"
@@ -261,6 +328,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 							onBack={() => navigate({ caseId: null })}
 							onChange={onChange}
 							onToast={setToast}
+							onDelete={(detail) => setDeleting({ ids: [detail.id], pending: detail.status === 'pending' ? 1 : 0 })}
 						/>
 					) : (
 						<div className="detail detail-empty">
@@ -272,6 +340,15 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 				</>
 				)}
 			</div>
+
+			{deleting && (
+				<DeleteDialog
+					count={deleting.ids.length}
+					pending={deleting.pending}
+					onCancel={() => setDeleting(null)}
+					onConfirm={() => remove(deleting.ids)}
+				/>
+			)}
 
 			<div className="toast" role="status" aria-live="polite">
 				{toast}

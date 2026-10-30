@@ -3,7 +3,7 @@
     xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
     bootstrap="Tests/bootstrap.php"
     colors="true"
-    cacheDirectory="../../Data/Temporary/Testing/Devclaim.NeosModeration/PHPUnit">
+    cacheDirectory=".phpunit.cache">
     <testsuites>
         <testsuite name="Devclaim.NeosModeration unit tests">
             <directory>Tests/Unit</directory>
