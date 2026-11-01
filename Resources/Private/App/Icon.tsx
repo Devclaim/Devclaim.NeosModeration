@@ -11,7 +11,10 @@ const PATHS = {
 	logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',
 	inbox: 'M3 13h5l2 3h4l2-3h5M5 5h14l2 8v6H3v-6z',
 	refresh: 'M20 11a8 8 0 10-2.3 5.7M20 4v7h-7',
-	trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6'
+	trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
+	select: 'M3.5 6l1.5 1.5 3-3M3.5 12l1.5 1.5 3-3M3.5 18l1.5 1.5 3-3M11 6h9M11 12h9M11 18h9',
+	selectAll: 'M4 4h16v16H4zM8 12l3 3 5-6',
+	selectNone: 'M4 4h16v16H4zM8 12h8'
 } as const;
 
 export function Icon({ name, size = 16 }: { name: keyof typeof PATHS; size?: number }) {

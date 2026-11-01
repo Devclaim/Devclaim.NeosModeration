@@ -60,7 +60,8 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	const [query, setQuery] = useState(location.q);
 	const [toast, setToast] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
-	// the cases selected in the list, for deleting several at once
+	// selection mode: a click on a case picks it instead of opening it, for deleting several at once
+	const [selecting, setSelecting] = useState(false);
 	const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 	const [deleting, setDeleting] = useState<{ ids: string[]; pending: number } | null>(null);
 
@@ -108,13 +109,31 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 			return next;
 		});
 
+	const enterSelection = (ids: string[] = []) => {
+		setSelected(new Set(ids));
+		setSelecting(true);
+	};
+
+	const leaveSelection = useCallback(() => {
+		setSelecting(false);
+		setSelected(new Set());
+	}, []);
+
+	// Escape ends selection mode, unless the delete dialog is open and takes it
+	useEffect(() => {
+		if (!selecting || deleting) return;
+		const onKey = (event: KeyboardEvent) => event.key === 'Escape' && leaveSelection();
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [selecting, deleting, leaveSelection]);
+
 	const remove = useCallback(
 		async (ids: string[]) => {
 			try {
 				const result = await api.remove(ids);
 				const gone = new Set(result.deleted);
 				setList((previous) => previous && { ...previous, counts: result.counts, cases: previous.cases.filter((item) => !gone.has(item.id)) });
-				setSelected(new Set());
+				leaveSelection();
 				if (location.caseId && gone.has(location.caseId)) navigate({ caseId: null, view: null }, true);
 				const failed = Object.keys(result.failed).length;
 				const deleted = result.deleted.length === 1 ? 'Fall gelöscht.' : `${result.deleted.length} Fälle gelöscht.`;
@@ -125,7 +144,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 			setDeleting(null);
 			load();
 		},
-		[api, load, location.caseId, navigate]
+		[api, load, leaveSelection, location.caseId, navigate]
 	);
 
 	// new requests arrive while the app is open: fresh when it comes back into view
@@ -167,6 +186,7 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 	const screen = configuration.screens.find((candidate) => candidate.key === location.screen) ?? null;
 	const showsDetail = screen ? location.item !== null : location.caseId !== null;
 	const allSelected = (list?.cases.length ?? 0) > 0 && selected.size === list?.cases.length;
+	const selectAll = () => setSelected(new Set(list?.cases.map((item) => item.id)));
 	const pendingOf = (ids: string[]) => ids.filter((id) => list?.cases.find((item) => item.id === id)?.status === 'pending').length;
 	const deleteSelected = () => setDeleting({ ids: [...selected], pending: pendingOf([...selected]) });
 
@@ -260,31 +280,25 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 						<h1>
 							{STATUS_LABELS[location.status]} <span className="muted">{list ? `· ${list.cases.length}` : ''}</span>
 						</h1>
-						<button type="button" className="icon-button" onClick={load} aria-label="Neu laden" title="Neu laden" data-loading={loading || undefined}>
-							<Icon name="refresh" />
-						</button>
-						<LoadingBar active={loading} edge="bottom" />
-					</div>
-					{list && list.cases.length > 0 && (
-						<div className="selection-bar" data-active={selected.size > 0 || undefined}>
-							<label className="case-select">
-								<input
-									type="checkbox"
-									checked={allSelected}
-									ref={(input) => {
-										if (input) input.indeterminate = selected.size > 0 && !allSelected;
-									}}
-									onChange={() => setSelected(allSelected ? new Set() : new Set(list.cases.map((item) => item.id)))}
-								/>
-								<span>{selected.size > 0 ? `${selected.size} ausgewählt` : 'Alle auswählen'}</span>
-							</label>
-							{selected.size > 0 && (
-								<button type="button" className="button button-danger" onClick={deleteSelected}>
-									<Icon name="trash" /> Löschen
+						<div className="list-header-actions">
+							{(selecting || (list?.cases.length ?? 0) > 0) && (
+								<button
+									type="button"
+									className="icon-button"
+									aria-pressed={selecting}
+									onClick={() => (selecting ? leaveSelection() : enterSelection())}
+									aria-label={selecting ? 'Auswahl beenden' : 'Mehrere auswählen'}
+									title={selecting ? 'Auswahl beenden' : 'Mehrere auswählen'}
+								>
+									<Icon name="select" />
 								</button>
 							)}
+							<button type="button" className="icon-button" onClick={load} aria-label="Neu laden" title="Neu laden" data-loading={loading || undefined}>
+								<Icon name="refresh" />
+							</button>
 						</div>
-					)}
+						<LoadingBar active={loading} edge="bottom" />
+					</div>
 					{listError && <p className="list-message" role="alert">{listError}</p>}
 					{list && list.cases.length === 0 && (
 						<div className="list-message">
@@ -294,16 +308,24 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 					)}
 					<ul className="cases">
 						{list?.cases.map((item) => (
-							<li key={item.id} className="case-row" data-selected={selected.has(item.id) || undefined}>
-								<label className="case-select">
-									<input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
-									<span className="visually-hidden">{item.title} auswählen</span>
-								</label>
+							<li key={item.id} className="case-row" data-selected={(selecting && selected.has(item.id)) || undefined}>
+								{selecting && (
+									<label className="case-select">
+										<input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
+										<span className="visually-hidden">{item.title} auswählen</span>
+									</label>
+								)}
 								<button
 									type="button"
 									className="case"
-									aria-current={item.id === location.caseId ? 'true' : undefined}
-									onClick={() => navigate({ caseId: item.id, view: null })}
+									aria-current={!selecting && item.id === location.caseId ? 'true' : undefined}
+									aria-pressed={selecting ? selected.has(item.id) : undefined}
+									onClick={(event) => {
+										if (selecting) toggle(item.id);
+										// shift+click starts selecting, with the open case and this one
+										else if (event.shiftKey) enterSelection((list?.cases ?? []).filter((other) => other.id === location.caseId || other.id === item.id).map((other) => other.id));
+										else navigate({ caseId: item.id, view: null });
+									}}
 								>
 									<span className="case-title">{item.title}</span>
 									<span className="case-summary">{item.summary || item.typeLabel}</span>
@@ -316,6 +338,34 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 							</li>
 						))}
 					</ul>
+					{/* selection mode: what is picked, and what can be done with it */}
+					{selecting && (
+						<div className="selection-bar">
+							<span className="selection-count" aria-live="polite">
+								{selected.size > 0 ? `${selected.size} ausgewählt` : 'Fälle zum Auswählen anklicken'}
+							</span>
+							{!allSelected && (
+								<button type="button" className="icon-button" onClick={selectAll} aria-label="Alle auswählen" title="Alle auswählen">
+									<Icon name="selectAll" />
+								</button>
+							)}
+							{selected.size > 0 && (
+								<button type="button" className="icon-button" onClick={() => setSelected(new Set())} aria-label="Keine auswählen" title="Keine auswählen">
+									<Icon name="selectNone" />
+								</button>
+							)}
+							<button
+								type="button"
+								className="icon-button icon-button-danger"
+								onClick={deleteSelected}
+								disabled={selected.size === 0}
+								aria-label="Ausgewählte löschen"
+								title="Ausgewählte löschen"
+							>
+								<Icon name="trash" />
+							</button>
+						</div>
+					)}
 				</section>
 
 				<main className="main">

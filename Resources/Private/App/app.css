@@ -409,27 +409,47 @@ a {
 	font-size: 13px;
 }
 
-/* selecting cases: a checkbox before each, the bar above them with the actions on the selection */
+.list-header-actions {
+	display: flex;
+	gap: 4px;
+}
+
+/* selection mode: a checkbox before each case, the bar below them with the actions on the selection */
+.icon-button[aria-pressed='true'] {
+	background: var(--accent-strong);
+	color: #fff;
+}
+
+.icon-button-danger {
+	color: var(--danger);
+}
+
+.icon-button-danger:hover {
+	background: #3a1c1c;
+	color: var(--danger);
+}
+
+.icon-button:disabled {
+	opacity: 0.4;
+	cursor: default;
+	pointer-events: none;
+}
+
 .selection-bar {
+	position: sticky;
+	bottom: 0;
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	min-height: 48px;
-	padding: 0 8px 0 0;
-	border-bottom: 1px solid var(--line);
-	color: var(--muted);
-	font-size: 14px;
-}
-
-.selection-bar[data-active] {
+	gap: 4px;
+	margin-top: auto;
+	padding: 4px 8px 4px 16px;
 	background: var(--surface-raised);
-	color: var(--text-strong);
 }
 
-.selection-bar .button {
-	min-height: 36px;
-	padding: 0 12px;
+.selection-count {
+	flex: 1;
+	color: var(--text-strong);
+	font-size: 14px;
 }
 
 .case-row {
@@ -440,8 +460,11 @@ a {
 .case-row .case {
 	flex: 1;
 	min-width: 0;
-	padding-left: 4px;
 	border-bottom: 0;
+}
+
+.case-select + .case {
+	padding-left: 4px;
 }
 
 .case-row[data-selected] {
@@ -1138,9 +1161,18 @@ textarea.control {
 		display: flex;
 	}
 
-	.app[data-view] .list,
 	.app[data-view] .main {
 		display: block;
+	}
+
+	/* a column, so the selection bar sits at its bottom even below a short list */
+	.app[data-view] .list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.list > * {
+		flex-shrink: 0;
 	}
 
 	.filters {
