@@ -467,6 +467,15 @@ a {
 	padding-left: 4px;
 }
 
+/* hover and selection colour the whole row, checkbox included, not only the case */
+.case-row:hover {
+	background: var(--surface-hover);
+}
+
+.case-row .case:not([aria-current='true']):hover {
+	background: transparent;
+}
+
 .case-row[data-selected] {
 	background: var(--accent-soft);
 }
