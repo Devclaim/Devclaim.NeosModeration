@@ -25,6 +25,10 @@ final class ModerationAppController extends ActionController
     #[Flow\InjectConfiguration(path: 'screens', package: 'Devclaim.NeosModeration')]
     protected array $screens = [];
 
+    /** @var array<string, string> */
+    #[Flow\InjectConfiguration(path: 'app.styleSheets', package: 'Devclaim.NeosModeration')]
+    protected array $styleSheets = [];
+
     public function __construct(
         private readonly PrivilegeManagerInterface $privilegeManager,
         private readonly ResourceManager $resourceManager,
@@ -55,6 +59,11 @@ final class ModerationAppController extends ActionController
             'screens' => $this->accessibleScreens(),
         ];
         $escape = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_HTML5);
+        $styleSheets = '';
+        foreach (array_filter($this->styleSheets) as $path) {
+            $styleSheets .= '<link rel="stylesheet" href="'
+                . $escape($this->resourceManager->getPublicPackageResourceUriByPath($path)) . '">' . "\n";
+        }
         $json = json_encode(
             $configuration,
             JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES,
@@ -70,7 +79,7 @@ final class ModerationAppController extends ActionController
 <link rel="icon" href="data:,">
 <title>Moderation</title>
 <link rel="stylesheet" href="' . $escape($this->asset('app.css')) . '">
-</head>
+' . $styleSheets . '</head>
 <body>
 <div id="moderation-app"></div>
 <noscript>Die Moderation braucht JavaScript.</noscript>

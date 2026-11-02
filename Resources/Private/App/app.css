@@ -25,7 +25,7 @@
 	--success-text: #7fd9a4;
 	--radius: 6px;
 	/* the height of the top bar of the Neos UI */
-	--topbar: 40px;
+	--topbar: 41px;
 	color-scheme: dark;
 }
 
@@ -79,99 +79,6 @@ a {
 	margin: 0;
 	color: var(--muted);
 	font-size: 13px;
-}
-
-/* top bar */
-.topbar {
-	position: sticky;
-	top: 0;
-	z-index: 20;
-	display: flex;
-	align-items: center;
-	height: var(--topbar);
-	padding-top: env(safe-area-inset-top);
-	background: #222;
-	border-bottom: 1px solid #3f3f3f;
-}
-
-/* like the menu button of the Neos UI: a square at the start, with a line */
-.topbar-back {
-	display: inline-flex;
-	flex: none;
-	align-items: center;
-	justify-content: center;
-	width: var(--topbar);
-	height: 100%;
-	border-right: 1px solid #3f3f3f;
-	color: var(--text-strong);
-}
-
-.topbar-back:hover {
-	background: var(--accent);
-}
-
-.neos-logo {
-	display: flex;
-	flex: none;
-	align-items: center;
-	gap: 10px;
-	height: 100%;
-	padding-inline: 12px 14px;
-	color: var(--text-strong);
-	text-decoration: none;
-}
-
-.neos-logo-text {
-	font-size: 16px;
-	line-height: 1;
-	letter-spacing: 0.25em;
-}
-
-.topbar-title {
-	padding-left: 14px;
-	border-left: 1px solid #3f3f3f;
-	color: var(--muted);
-	font-size: 14px;
-	line-height: var(--topbar);
-	white-space: nowrap;
-}
-
-.topbar > .badge {
-	margin-left: 8px;
-}
-
-.topbar-end {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	margin-left: auto;
-	padding-right: 4px;
-	min-width: 0;
-}
-
-.topbar-end form {
-	margin: 0;
-}
-
-.topbar .icon-button {
-	width: var(--topbar);
-	height: var(--topbar);
-}
-
-/* phones: the logo without its word, so the title and the user fit */
-@media (max-width: 520px) {
-	.neos-logo-text {
-		display: none;
-	}
-}
-
-.user {
-	overflow: hidden;
-	max-width: 40vw;
-	color: var(--muted);
-	font-size: 14px;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 
 .icon-button {

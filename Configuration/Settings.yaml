@@ -4,6 +4,10 @@ Devclaim:
     # More screens of the moderation app, next to the inbox, provided by other packages (README "Screens"):
     # key: {label, uri (a JSON API of the collection contract), privilegeTarget}
     screens: {}
+    app:
+      # More stylesheets of the app, after its own, from other packages: name: resource:// path
+      # (Devclaim.NeosModernBackend: its top bar, the same as in the backend)
+      styleSheets: {}
 
 Neos:
   Flow:

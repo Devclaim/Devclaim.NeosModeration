@@ -20,7 +20,20 @@ the app (e.g. a bar in the Neos UI next to the content a case created) get the t
 (`{"csrfToken": …, "moderates": true|false}`) and use the same API.
 
 ```bash
-cd DistributionPackages/Devclaim.NeosModeration && yarn install && yarn build   # after a change of the app
+yarn install && yarn build   # in this package, after a change of the app
+```
+
+Its top bar is the one of the Neos UI in short: back to Neos, the logo, "Moderation", the user. With
+[Devclaim.NeosModernBackend](https://github.com/Devclaim/Devclaim.NeosModernBackend) it is that package's top bar
+component, the same as in the backend: more stylesheets of the app come from a setting, after its own, and the modern
+backend registers its top bar there.
+
+```yaml
+Devclaim:
+  NeosModeration:
+    app:
+      styleSheets:        # name: resource:// path
+        'Acme.Site:App': 'resource://Acme.Site/Public/Moderation.css'
 ```
 
 ## Corrections and preview

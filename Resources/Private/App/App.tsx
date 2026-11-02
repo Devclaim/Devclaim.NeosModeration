@@ -192,24 +192,26 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 
 	return (
 		<div className="app" data-view={showsDetail ? 'detail' : 'list'} data-tabs={configuration.screens.length > 0 || undefined}>
-			{/* like the top bar of the Neos UI: back to the backend, the logo, where we are */}
-			<header className="topbar">
-				<a className="topbar-back" href={configuration.contentUri ?? configuration.backendUri} title="Zurück zu Neos" aria-label="Zurück zu Neos">
+			{/*
+			  like the top bar of the Neos UI: back to the backend, the logo, where we are; with Devclaim.NeosModernBackend
+			  its top bar (dc-topbar, setting Devclaim.NeosModeration.app.styleSheets), the same as in the backend
+			*/}
+			<header className="dc-topbar">
+				<a className="dc-topbar__button" href={configuration.contentUri ?? configuration.backendUri} title="Zurück zu Neos" aria-label="Zurück zu Neos">
 					<Icon name="back" size={18} />
 				</a>
-				<a className="neos-logo" href="/neos/moderation" aria-label="Moderation">
+				<a className="dc-topbar__logo" href="/neos/moderation" aria-label="Moderation">
 					<NeosLogo />
-					<span className="neos-logo-text">NEOS</span>
 				</a>
-				<span className="topbar-title">Moderation</span>
+				<span className="dc-topbar__title">Moderation</span>
 				{configuration.screens.length === 0 && (counts.pending ?? 0) > 0 && (
-					<span className="badge badge-pending" aria-label={`${counts.pending} offen`}>{counts.pending}</span>
+					<span className="badge badge-pending dc-topbar__badge" aria-label={`${counts.pending} offen`}>{counts.pending}</span>
 				)}
-				<div className="topbar-end">
-					<span className="user" title={configuration.user}>{configuration.user}</span>
-					<form method="post" action={configuration.logoutUri}>
+				<div className="dc-topbar__end">
+					<span className="dc-topbar__text" title={configuration.user}>{configuration.user}</span>
+					<form className="dc-topbar__form" method="post" action={configuration.logoutUri}>
 						<input type="hidden" name="__csrfToken" value={configuration.csrfToken} />
-						<button type="submit" className="icon-button" aria-label="Abmelden" title="Abmelden">
+						<button type="submit" className="dc-topbar__button" aria-label="Abmelden" title="Abmelden">
 							<Icon name="logout" size={18} />
 						</button>
 					</form>
@@ -408,11 +410,13 @@ export function App({ api, configuration }: { api: Api; configuration: Configura
 }
 
 /** the mark of Neos (Neos.Neos Images/Login/Logo.svg), its dark part white as on the dark bar of the Neos UI */
+/** the logo of Neos, as in its backend (Neos.Neos Partials/Backend/Branding.html) */
 function NeosLogo() {
 	return (
-		<svg viewBox="40 34 120 132" width="22" height="24" aria-hidden="true" focusable="false">
-			<path fill="#fff" d="M132.984 37.5l-20.642 15.162v31.716l20.642 29.413M132.984 150.564L53.627 37.5l-9.193 6.773V162.5l20.642-15.162V88.79l51.619 73.71h22.58l16.291-11.936" />
-			<path fill="#00ADEE" d="M65.076 88.79v58.548L44.434 162.5h22.582l20.642-15.162v-26.3M132.984 113.791V37.5h22.582v113.064h-22.582L53.627 37.5h25.809" />
+		<svg className="dc-topbar__logo-image" viewBox="0 0 453.54 124.45" aria-hidden="true" focusable="false">
+			<path fill="#fff" d="M410.69 86l4.95-5.54c5.5 4.94 10.61 7.54 18.11 7.54 6.7 0 11.49-3.4 11.49-8.47 0-4.51-2.55-6.89-13.49-9.66-12.69-3.25-19.07-7.6-19.07-16.47 0-9.19 8.46-15.52 19.31-15.52 8.06 0 14 2.62 19.71 7.13l-4.63 5.94c-5.27-4.12-9.74-5.86-15.16-5.86-6.15 0-10.86 3-10.86 7.76 0 4.59 3 7.13 14.29 9.9 12.21 2.93 18.2 7.76 18.2 16.31 0 10-8.62 16.16-19.87 16.16-8.94 0-16.36-3.22-22.98-9.22zM327.77 66.55c0-15.68 12.13-28.67 29-28.67s29 13 29 28.67-12.13 28.67-29 28.67-29-12.99-29-28.67zm49.72 0c0-12.12-8.54-21.3-20.67-21.3s-20.67 9.19-20.67 21.3 8.54 21.3 20.67 21.3 20.67-9.19 20.67-21.3zM302.55 38.83V46h-32.72v16.67H299V70h-29.17v17.06h33.12v7.21h-41.18V38.83zM191.07 38.83l32.48 40.94V38.83h7.9v55.44h-6.62l-33.37-42.06v42.06h-7.9V38.83z" />
+			<path fill="#009fe3" d="M88.83 0L68.12 15.1v31.57l20.71 29.28V0zM88.83 112.57L9.22 0 0 6.74v117.71l20.71-15.1V51.06l51.78 73.39h22.65l16.34-11.88H88.83z" />
+			<path fill="#fff" d="M20.71 51.06v58.29L0 124.45h22.65l20.71-15.1V83.17L20.71 51.06zM88.83 75.95V0h22.65v112.57H88.83L9.22 0h25.89l53.72 75.95z" />
 		</svg>
 	);
 }
