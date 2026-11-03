@@ -1,0 +1,14 @@
+/*
+ * The frame of the backend module "moderation" (ModerationController): the app edge to edge below the top bar of the
+ * backend, without the padding and the breadcrumb of a module page; the app itself is styled in its shadow root
+ * (Resources/Private/App/app.css). "body.neos": stronger than the module page of Neos and Devclaim.NeosModernBackend.
+ */
+body.neos.neos-module-moderation > .neos-module-wrap {
+	min-height: 100dvh;
+	padding: 41px 0 0;
+	background: #161616;
+}
+
+body.neos.neos-module-moderation > .neos-module-wrap > .neos-breadcrumb {
+	display: none;
+}

@@ -2,7 +2,7 @@ privilegeTargets:
   'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
     'Devclaim.NeosModeration:Backend.Actions':
       label: 'Access moderation backend controller actions'
-      matcher: 'method(Devclaim\NeosModeration\Controller\ModerationController->indexAction()) || method(Devclaim\NeosModeration\Controller\ModerationAppController->indexAction()) || method(Devclaim\NeosModeration\Controller\ModerationApiController->(session|cases|case|correct|approve|reject|delete)Action())'
+      matcher: 'method(Devclaim\NeosModeration\Controller\ModerationController->indexAction()) || method(Devclaim\NeosModeration\Controller\ModerationApiController->(session|cases|case|correct|approve|reject|delete)Action())'
 
   'Neos\Neos\Security\Authorization\Privilege\ModulePrivilege':
     'Devclaim.NeosModeration:Backend.Module':
@@ -19,7 +19,10 @@ roles:
         privilegeTarget: 'Devclaim.NeosModeration:Backend.Actions'
         permission: GRANT
 
+  # the base of the moderator roles of a project, which grant the types (README "Registering a type"); abstract: never
+  # assigned on its own (it would open the moderation without any case to see)
   'Devclaim.NeosModeration:Moderator':
+    abstract: true
     label: 'Moderation backend user'
     description: 'Allows backend login and opening moderation; a project role must additionally grant type privileges.'
     privileges:

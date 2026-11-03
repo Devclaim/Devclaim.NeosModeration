@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { CorrectableField } from './api';
 import { ERROR_LABELS } from './format';
+import { Select } from './Select';
 
 /**
  * The correctable fields of a case, by group, as the type handler describes them. A field is saved when it is left
@@ -81,7 +82,7 @@ function Field({
 
 	return (
 		<div className={wide ? 'field field-wide' : 'field'}>
-			<label htmlFor={field.editor === 'richText' ? undefined : id} className="field-label">
+			<label htmlFor={field.editor === 'richText' ? undefined : id} id={`${id}-label`} className="field-label">
 				{field.label}
 				{!field.required && <span className="muted"> (optional)</span>}
 				{isCorrected && <span className="badge badge-corrected">korrigiert</span>}
@@ -99,14 +100,19 @@ function Field({
 					onBlur={(event) => commit(event.target.value)}
 				/>
 			) : field.editor === 'select' ? (
-				<select {...common} className="control" value={draft} onChange={(event) => { setDraft(event.target.value); commit(event.target.value); }}>
-					<option value="">—</option>
-					{field.options.map((option) => (
-						<option key={option.value} value={option.value}>
-							{option.label}
-						</option>
-					))}
-				</select>
+				<Select
+					id={id}
+					labelledBy={`${id}-label`}
+					describedBy={common['aria-describedby']}
+					disabled={readOnly}
+					invalid={Boolean(error)}
+					value={draft}
+					options={[{ value: '', label: '—' }, ...field.options]}
+					onChange={(next) => {
+						setDraft(next);
+						commit(next);
+					}}
+				/>
 			) : (
 				<input
 					{...common}

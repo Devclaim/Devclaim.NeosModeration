@@ -3,11 +3,6 @@
 export type Configuration = {
 	apiBase: string;
 	csrfToken: string;
-	user: string;
-	backendUri: string;
-	/** the content module of Neos, if the user may open it: where "back" leads (else the backend) */
-	contentUri: string | null;
-	logoutUri: string;
 	/** more screens next to the inbox (setting Devclaim.NeosModeration.screens), those the user may open */
 	screens: Screen[];
 };

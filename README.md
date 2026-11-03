@@ -6,13 +6,19 @@ contains no public submission endpoint, spam protection, event model, or fronten
 
 ## The moderation app
 
-`/neos/moderation` is a page of its own (`ModerationAppController`, a React app in `Resources/Private/App`, built to
-`Resources/Public/App`), made for phones as well: the list of cases with filters, a case with its preview, its
-correctable fields, the private contact data, the history and the decision. Links keep the state
-(`/neos/moderation?case=…&status=…`). It uses the Neos backend session; without one, the Neos login brings the user
-back. The backend module "moderation" has the same address, so users without the content module (moderators) land in
-the app after logging in (`Neos.Neos.moduleConfiguration.preferredStartModules`); moderators who may open the content
-module but not publish to live land there too (`ModeratorStartAspect`).
+`/neos/moderation` is the backend module "moderation" (`ModerationController`): a React app (`Resources/Private/App`,
+built to `Resources/Public/App`) in the frame of the backend, with its top bar and menu, made for phones as well: the
+list of cases with filters, a case with its preview, its correctable fields, the private contact data, the history and
+the decision. The app renders into a shadow root of its own, so the styles of the backend and of the app stay apart;
+the frame only loses its padding and breadcrumb (`Resources/Public/Module/Module.css`). Links keep the state
+(`/neos/moderation?case=…&status=…`). Without a backend session, the Neos login brings the user back. Users without the
+content module (moderators) land in the module after logging in (`Neos.Neos.moduleConfiguration.preferredStartModules`);
+moderators who may open the content module but not publish to live land there too (`ModeratorStartAspect`).
+
+On phones the module page needs a viewport, which the module page of Neos does not render: the module sets one
+(`viewport` in its module settings), and the template of
+[Devclaim.NeosModernBackend](https://github.com/Devclaim/Devclaim.NeosModernBackend) renders it. Without that
+package the app works the same, but phones show the module page zoomed out.
 
 The app talks to a JSON API with the session and its CSRF token (`ModerationApiController`, `/neos/moderation/api/…`):
 the cases with counts per status, a case, its corrections, approval, rejection and deletion. Pages of the same origin outside of
@@ -21,19 +27,6 @@ the app (e.g. a bar in the Neos UI next to the content a case created) get the t
 
 ```bash
 yarn install && yarn build   # in this package, after a change of the app
-```
-
-Its top bar is the one of the Neos UI in short: back to Neos, the logo, "Moderation", the user. With
-[Devclaim.NeosModernBackend](https://github.com/Devclaim/Devclaim.NeosModernBackend) it is that package's top bar
-component, the same as in the backend: more stylesheets of the app come from a setting, after its own, and the modern
-backend registers its top bar there.
-
-```yaml
-Devclaim:
-  NeosModeration:
-    app:
-      styleSheets:        # name: resource:// path
-        'Acme.Site:App': 'resource://Acme.Site/Public/Moderation.css'
 ```
 
 ## Corrections and preview
@@ -144,17 +137,26 @@ roles:
 
 Privilege targets are identifiers evaluated explicitly by the application service; their matcher is never used to
 authorize a controller. A dedicated no-op permission-subject method is a convenient Flow policy declaration.
-Omit the private-metadata target and return `null` when only administrators may see contact data.
+Omit the private-metadata target and return `null` when nobody may see contact data in the app.
 
-The base `Devclaim.NeosModeration:Moderator` role does **not** inherit `Neos.Neos:AbstractEditor`. It grants only backend
+The base `Devclaim.NeosModeration:Moderator` role is abstract (never assigned on its own: it would open the moderation
+without a type to see) and does **not** inherit `Neos.Neos:AbstractEditor`. It grants only backend
 shell access plus the moderation app and its API, and no type privilege. Consequently it cannot access content, media,
-workspaces, publishing, redirects, users, packages, sites, or configuration. Neos administrators can access all
-registered moderation types; every other account must be granted the handler's exact type privilege.
+workspaces, publishing, redirects, users, packages, sites, or configuration. Only the policy decides who may moderate
+a type, administrators included: they open the moderation (this package grants them the module), but see a type only
+when the project grants it to them, most simply by giving `Neos.Neos:Administrator` its moderator role as a parent
+role. Repeat the parent roles of Neos when doing so (Flow merges the list by position):
+
+```yaml
+roles:
+        'Neos.Neos:Administrator':
+                parentRoles: ['Neos.Neos:Editor', 'Acme.Site:ExampleModerator']
+```
 
 ## Screens
 
 Other packages can add screens next to the inbox, e.g. a list of what approvals created. A screen is a setting and a
-JSON API; the app shows it to users with its privilege (administrators: all):
+JSON API; the app shows it to users granted its privilege:
 
 ```yaml
 Devclaim:

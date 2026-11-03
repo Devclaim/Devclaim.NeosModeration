@@ -23,7 +23,7 @@ use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Neos\Domain\Service\UserService;
 
 /**
- * The JSON API of the moderation app (ModerationAppController), with the Neos backend session: the cases of the
+ * The JSON API of the moderation app (the backend module, ModerationController), with the Neos backend session: the cases of the
  * types the user may moderate, a case with its presentation, corrections and preview, the decisions and deleting
  * cases. Every action goes through ModerationCaseService, which checks the type privilege; POST requests need the CSRF token
  * (header X-Flow-Csrftoken).

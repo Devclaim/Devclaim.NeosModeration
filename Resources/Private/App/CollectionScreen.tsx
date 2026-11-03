@@ -6,6 +6,7 @@ import { CaseDetail } from './CaseDetail';
 import { Facts } from './Facts';
 import { Preview } from './Preview';
 import { LoadingBar } from './LoadingBar';
+import { Select } from './Select';
 
 /**
  * A screen of another package (README "Screens"): its items with the filters it describes, and the selected item.
@@ -102,17 +103,17 @@ export function CollectionScreen({
 							))}
 						</div>
 					) : (
-						<label key={filter.name} className="type-filter">
-							<span className="section-title">{filter.label}</span>
-							<select className="control" value={selected[filter.name] ?? ''} onChange={(event) => select(filter.name, event.target.value)}>
-								<option value="">{filter.kind === 'period' ? 'Alle Termine' : 'Alle'}</option>
-								{filter.options.map((option) => (
-									<option key={option.value} value={option.value}>
-										{option.label}
-									</option>
-								))}
-							</select>
-						</label>
+						<div key={filter.name} className="type-filter">
+							<span className="section-title" id={`filter-${filter.name}`}>
+								{filter.label}
+							</span>
+							<Select
+								labelledBy={`filter-${filter.name}`}
+								value={selected[filter.name] ?? ''}
+								options={[{ value: '', label: filter.kind === 'period' ? 'Alle Termine' : 'Alle' }, ...filter.options]}
+								onChange={(value) => select(filter.name, value)}
+							/>
+						</div>
 					)
 				)}
 			</nav>

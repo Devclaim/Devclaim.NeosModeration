@@ -1,9 +1,10 @@
 /*
  * The moderation app in the look of the Neos backend: dark surfaces, the Neos blue for the selection, orange for what is
  * open. Mobile first: on phones the list and the case are screens of their own, the decision buttons stay at the bottom;
- * from 760px list and case are side by side, from 1180px the filters too.
+ * from 760px list and case are side by side, from 1180px the filters too. In the shadow root of the backend module
+ * (main.tsx), below its top bar: these styles stay inside, the ones of the backend outside.
  */
-:root {
+:host {
 	--bg: #161616;
 	--surface: #1d1d1d;
 	--surface-raised: #262626;
@@ -24,8 +25,14 @@
 	--success-soft: #183326;
 	--success-text: #7fd9a4;
 	--radius: 6px;
-	/* the height of the top bar of the Neos UI */
+	/* the height of the top bar of the backend */
 	--topbar: 41px;
+	display: block;
+	min-height: calc(100dvh - var(--topbar));
+	background: var(--bg);
+	color: var(--text);
+	font: 15px/1.45 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	-webkit-font-smoothing: antialiased;
 	color-scheme: dark;
 }
 
@@ -33,16 +40,6 @@
 *::before,
 *::after {
 	box-sizing: border-box;
-}
-
-html,
-body {
-	margin: 0;
-	min-height: 100%;
-	background: var(--bg);
-	color: var(--text);
-	font: 15px/1.45 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-	-webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -201,17 +198,20 @@ a {
 	gap: 8px;
 	min-height: 40px;
 	padding: 0 14px;
-	border: 1px solid var(--line-strong);
+	border: 0;
 	border-radius: 20px;
-	background: transparent;
+	background: var(--surface-raised);
 	cursor: pointer;
 }
 
+/* as in the menu of the backend: the text blue when pointed at; the selected one filled, in the same weight (no jump) */
+.filter:not([aria-pressed='true']):hover {
+	color: var(--accent);
+}
+
 .filter[aria-pressed='true'] {
-	border-color: var(--accent);
 	background: var(--accent-strong);
 	color: #fff;
-	font-weight: 600;
 }
 
 .filter-count {
@@ -507,10 +507,13 @@ a {
 	cursor: pointer;
 }
 
+.segmented button:not([aria-pressed='true']):hover {
+	color: var(--accent);
+}
+
 .segmented button[aria-pressed='true'] {
 	background: #3a3a3a;
 	color: var(--text-strong);
-	font-weight: 600;
 }
 
 .detail-body {
@@ -799,11 +802,12 @@ a {
 	font-size: 13px;
 }
 
+/* fields on a muted background, without a border, like the search */
 .control {
 	width: 100%;
 	min-height: 44px;
 	padding: 9px 10px;
-	border: 1px solid var(--line-strong);
+	border: 0;
 	border-radius: 4px;
 	background: var(--surface-raised);
 	color: var(--text);
@@ -817,8 +821,92 @@ textarea.control {
 	opacity: 0.7;
 }
 
-.control[aria-invalid='true'] {
-	border-color: var(--danger);
+.control[aria-invalid='true'],
+.selectbox[aria-invalid='true'] {
+	box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+/*
+ * The select box (Select.tsx) in the look of the one of the Neos UI: the selected option with a chevron, as high as
+ * the fields; its list below it on the grey of the Neos UI's lists, the option under the pointer or the keys filled
+ * blue, the selected one blue
+ */
+.selectbox {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 44px;
+	padding: 0 12px;
+	border: 0;
+	border-radius: 4px;
+	background: var(--surface-raised);
+	color: var(--text);
+	text-align: start;
+	cursor: pointer;
+}
+
+.selectbox:not(:disabled):hover,
+.selectbox[aria-expanded='true'] {
+	color: var(--accent);
+}
+
+.selectbox:disabled {
+	opacity: 0.7;
+	cursor: default;
+}
+
+.selectbox-label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.selectbox svg {
+	flex: none;
+	transition: transform 0.15s ease;
+}
+
+.selectbox[aria-expanded='true'] svg {
+	transform: rotate(180deg);
+}
+
+/* in the top layer (popover): fixed, placed by Select.tsx */
+.selectbox-list {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	border: 0;
+	border-radius: 0 0 4px 4px;
+	background: #323232;
+	color: var(--text);
+	font-size: 14px;
+	list-style: none;
+	box-shadow: 0 5px 10px rgb(0 0 0 / 0.3);
+	overscroll-behavior: contain;
+}
+
+.selectbox-option {
+	overflow: hidden;
+	height: 40px;
+	padding: 5px 16px;
+	line-height: 30px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.selectbox-option[aria-selected='true'] {
+	color: var(--accent);
+}
+
+.selectbox-option[data-active] {
+	background: var(--accent);
+	color: #fff;
 }
 
 .field-error {
@@ -1166,9 +1254,12 @@ textarea.control {
 		gap: 2px;
 	}
 
+	.filter:not([aria-pressed='true']) {
+		background: transparent;
+	}
+
 	.filter {
 		justify-content: space-between;
-		border: 0;
 		border-radius: 4px;
 	}
 }
@@ -1198,7 +1289,6 @@ textarea.control {
 	overflow-x: auto;
 	padding: 0 12px;
 	background: #1c1c1c;
-	border-bottom: 1px solid var(--line);
 	scrollbar-width: none;
 }
 
@@ -1216,14 +1306,18 @@ textarea.control {
 	cursor: pointer;
 }
 
+.tabs button:not([aria-current='page']):hover {
+	color: var(--accent);
+}
+
+/* the current one: white with the blue line, in the same weight as the others (no jump) */
 .tabs button[aria-current='page'] {
 	border-bottom-color: var(--accent);
 	color: var(--text-strong);
-	font-weight: 600;
 }
 
 .app[data-tabs] {
-	--tabs: 47px;
+	--tabs: 46px;
 }
 
 .app[data-tabs] .detail {
@@ -1304,7 +1398,7 @@ textarea.control {
 		font-size: 11px;
 	}
 
-	.type-filter .control {
+	.type-filter .selectbox {
 		min-height: 40px;
 		padding: 6px 8px;
 		font-size: 14px;

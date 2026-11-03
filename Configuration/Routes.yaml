@@ -1,15 +1,5 @@
-# Before the routes of Neos: /neos/moderation is the moderation app, not the module frame (ModerationAppController)
--
-  name: 'Moderation app'
-  uriPattern: 'neos/moderation'
-  httpMethods: ['GET']
-  defaults:
-    '@package': 'Devclaim.NeosModeration'
-    '@controller': 'ModerationApp'
-    '@action': 'index'
-    '@format': 'html'
-  # the state of the app is in the query (?case=…&screen=…): kept when the login sends the user back
-  appendExceedingArguments: true
+# Before the routes of Neos: the JSON API of the moderation app (ModerationApiController); the app itself is the
+# backend module "moderation" at /neos/moderation (ModerationController)
 -
   name: 'Moderation API: session'
   uriPattern: 'neos/moderation/api/session'

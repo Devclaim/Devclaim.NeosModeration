@@ -4,10 +4,6 @@ Devclaim:
     # More screens of the moderation app, next to the inbox, provided by other packages (README "Screens"):
     # key: {label, uri (a JSON API of the collection contract), privilegeTarget}
     screens: {}
-    app:
-      # More stylesheets of the app, after its own, from other packages: name: resource:// path
-      # (Devclaim.NeosModernBackend: its top bar, the same as in the backend)
-      styleSheets: {}
 
 Neos:
   Flow:
@@ -29,7 +25,7 @@ Neos:
     moduleConfiguration:
       # Neos 9.2's login redirect falls through to current([]) for a leaf-only root module.
       # Keep the existing preferences and add moderation before the user fallback: moderators without the content
-      # module land in the moderation app, which has the address of the module (Routes.yaml). Moderators who may
+      # module land in the moderation module, the moderation app in the frame of the backend. Moderators who may
       # open the content module but not publish to live land there too (ModeratorStartAspect).
       preferredStartModules: ['content', 'moderation', 'user/usersettings']
     modules:
@@ -40,6 +36,13 @@ Neos:
         icon: 'fas fa-shield-alt'
         privilegeTarget: 'Devclaim.NeosModeration:Backend.Module'
         mainStylesheet: 'Lite'
+        # made for phones as well: the viewport of the module page (used by Devclaim.NeosModernBackend, whose
+        # template renders it; the module page of Neos has none)
+        viewport: 'width=device-width, initial-scale=1, viewport-fit=cover'
+        additionalResources:
+          styleSheets:
+            # the app edge to edge below the top bar (the app itself: its shadow root, Resources/Private/App)
+            'Devclaim.NeosModeration:Module': 'resource://Devclaim.NeosModeration/Public/Module/Module.css'
     Ui:
       # "Moderation" in the top bar of the content module, with the number of open cases (Public/NeosUi/Toolbar.js)
       resources:
